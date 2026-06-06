@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+    <style>
+        .login-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card login-card" style="text-align: center; max-width: 400px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔧💇‍♀️🔌</div>
+                <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">ServMatch</h1>
+                <p style="opacity: 0.9; font-size: 0.875rem;">Conectando clientes e profissionais</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label class="input-label">📧 E-mail</label>
+                    <input type="email" id="email" class="input-field" required placeholder="seu@email.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">🔒 Senha</label>
+                    <input type="password" id="senha" class="input-field" required placeholder="••••••••">
+                </div>
+                <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-weight: normal; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="isCadastro"> Sou novo aqui
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    Entrar / Criar Conta
+                </button>
+            </form>
+            
+            <p class="text-sm" style="color: var(--gray-500); margin-top: 1rem;">
+                🔒 Sua segurança é nossa prioridade
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { fazerLogin, criarConta } from './js/auth.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { auth } from './js/firebase-config.js';
+        import { mostrarSucesso, mostrarErro } from './js/toast.js';
+        
+        // Se já estiver logado, vai direto
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = 'cliente.html';
+            }
+        });
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const isCadastro = document.getElementById('isCadastro').checked;
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            
+            btn.innerHTML = '<div class="loading-spinner" style="display: inline-block;"></div> Processando...';
+            btn.disabled = true;
+            
+            let result;
+            if (isCadastro) {
+                result = await criarConta(email, senha);
+                if (result.success) {
+                    mostrarSucesso("Conta criada com sucesso! Redirecionando...");
+                    setTimeout(() => {
+                        window.location.href = 'cliente.html';
+                    }, 1500);
+                } else {
+                    mostrarErro(result.error);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+            } else {
+                result = await fazerLogin(email, senha);
+                if (result.success) {
+                    mostrarSucesso("Login realizado!");
+                    setTimeout(() => {
+                        window.location.href = 'cliente.html';
+                    }, 1000);
+                } else {
+                    mostrarErro(result.error);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

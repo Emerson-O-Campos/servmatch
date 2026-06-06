@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ServMatch - Encontre profissionais perto de você</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        /* Estilos específicos do index */
+        .hero-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hero-subtitle {
+            color: var(--gray-500);
+            font-size: 1rem;
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: var(--radius-2xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .search-input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-xl);
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn-search {
+            background: var(--gradient-blue);
+            color: white;
+            border: none;
+            padding: 0 2rem;
+            border-radius: var(--radius-xl);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-blue);
+        }
+        
+        .btn-location {
+            background: var(--blue-light-100);
+            color: var(--blue-light-700);
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: var(--radius-xl);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-location:hover {
+            background: var(--blue-light-200);
+            transform: translateY(-2px);
+        }
+        
+        .filters-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .filters-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .categories-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .category-item {
+            background: var(--gray-100);
+            padding: 0.5rem 1.25rem;
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .category-item:hover {
+            background: var(--gradient-blue);
+            color: white;
+            transform: translateY(-2px);
+            border-color: transparent;
+        }
+        
+        .order-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .order-btn {
+            background: var(--gray-100);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--gray-600);
+        }
+        
+        .order-btn.active {
+            background: var(--gradient-blue);
+            color: white;
+        }
+        
+        .order-btn:hover {
+            background: var(--primary-500);
+            color: white;
+        }
+        
+        .location-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+        
+        .location-select {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            background: white;
+        }
+        
+        .location-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+        }
+        
+        .btn-filter {
+            background: var(--gray-100);
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-lg);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-filter:hover {
+            background: var(--primary-500);
+            color: white;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .results-count {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+        
+        .results-count strong {
+            color: var(--primary-600);
+            font-size: 1.125rem;
+        }
+        
+        .radius-selector {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            display: none;
+        }
+        
+        .radius-selector.active {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+        
+        .radius-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .radius-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+        
+        .radius-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            background: white;
+        }
+        
+        .status-location {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+        
+        .tip-card {
+            background: linear-gradient(135deg, var(--primary-50), var(--blue-light-100));
+            border: none;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 1.75rem;
+            }
+            
+            .search-input-group {
+                flex-direction: column;
+            }
+            
+            .btn-search, .btn-location {
+                padding: 0.875rem;
+                justify-content: center;
+            }
+            
+            .location-filters {
+                flex-direction: column;
+            }
+            
+            .location-select, .location-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header-premium animate-fade-in">
+            <div class="flex-between">
+                <div>
+                    <h1>ServMatch</h1>
+                    <p>Conectando você aos melhores profissionais</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button id="clienteBtn" class="btn-outline-light" style="background: rgba(255,255,255,0.15); border: none; border-radius: var(--radius-lg); padding: 0.5rem 1.25rem; font-size: 0.875rem; cursor: pointer; color: white; transition: all 0.2s;">
+                        👤 Sou Cliente
+                    </button>
+                    <button id="prestadorBtn" class="btn-outline-light" style="background: rgba(255,255,255,0.15); border: none; border-radius: var(--radius-lg); padding: 0.5rem 1.25rem; font-size: 0.875rem; cursor: pointer; color: white; transition: all 0.2s;">
+                        👨‍🔧 Sou Prestador
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hero Section -->
+        <div class="hero-section animate-fade-in-up delay-100">
+            <h1 class="hero-title">Encontre o profissional ideal</h1>
+            <p class="hero-subtitle">Milhares de profissionais qualificados prontos para atender você</p>
+        </div>
+        
+        <!-- Card de Busca Principal -->
+        <div class="search-card animate-fade-in-up delay-200">
+            <form id="buscaForm">
+                <div class="search-input-group">
+                    <input type="text" id="profissao" class="search-input" placeholder="Busque por profissão, nome ou cidade... (ex: eletricista, João, São Paulo)">
+                    <button type="submit" class="btn-search">
+                        🔍 Buscar
+                    </button>
+                    <button type="button" id="buscarPertoBtn" class="btn-location">
+                        📍 Perto de mim
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Raio de busca (aparece ao clicar em Perto de mim) -->
+            <div id="radiusSelector" class="radius-selector">
+                <div class="radius-row">
+                    <span class="radius-label">📍 Raio de busca:</span>
+                    <select id="raioBusca" class="radius-select">
+                        <option value="5">Até 5 km</option>
+                        <option value="10" selected>Até 10 km</option>
+                        <option value="20">Até 20 km</option>
+                        <option value="30">Até 30 km</option>
+                        <option value="50">Até 50 km</option>
+                        <option value="100">Cidade inteira</option>
+                    </select>
+                    <span id="statusLocalizacao" class="status-location"></span>
+                </div>
+            </div>
+            
+            <!-- Filtros -->
+            <div class="filters-section">
+                <div class="filters-title">
+                    <span>📂</span> Categorias populares
+                </div>
+                <div class="categories-grid">
+                    <span class="category-item" data-profissao="eletricista">⚡ Eletricista</span>
+                    <span class="category-item" data-profissao="encanador">🚰 Encanador</span>
+                    <span class="category-item" data-profissao="pedreiro">🧱 Pedreiro</span>
+                    <span class="category-item" data-profissao="faxineira">🧹 Faxineira</span>
+                    <span class="category-item" data-profissao="manicure">💅 Manicure</span>
+                    <span class="category-item" data-profissao="pintor">🎨 Pintor</span>
+                    <span class="category-item" data-profissao="programador">💻 Programador</span>
+                    <span class="category-item" data-profissao="marceneiro">🪑 Marceneiro</span>
+                    <span class="category-item" data-profissao="jardineiro">🌿 Jardineiro</span>
+                </div>
+                
+                <div class="filters-title">
+                    <span>🔧</span> Filtros avançados
+                </div>
+                
+                <!-- Filtro de localização -->
+                <div style="margin-bottom: 1rem;">
+                    <div class="location-filters">
+                        <select id="filtroEstado" class="location-select">
+                            <option value="">Todos os estados</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                        <input type="text" id="filtroCidade" class="location-input" placeholder="Cidade">
+                        <button id="aplicarFiltroLocalBtn" class="btn-filter">📍 Aplicar filtro</button>
+                        <button id="limparFiltroLocalBtn" class="btn-filter" style="background: var(--gray-200);">🗑️ Limpar</button>
+                    </div>
+                </div>
+                
+                <!-- Ordenação -->
+                <div>
+                    <div class="order-buttons">
+                        <button class="order-btn active" data-order="relevancia">📌 Relevância</button>
+                        <button class="order-btn" data-order="preco_menor">💰 Menor preço</button>
+                        <button class="order-btn" data-order="preco_maior">💰 Maior preço</button>
+                        <button class="order-btn" data-order="avaliacao">⭐ Melhor avaliação</button>
+                        <button class="order-btn" data-order="distancia">📍 Mais perto</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resultados da Busca -->
+        <div id="resultadoBusca">
+            <div class="card text-center" style="background: linear-gradient(135deg, var(--primary-50), var(--blue-light-100)); border: none;">
+                <span style="font-size: 3rem;">🔍</span>
+                <p class="text-bold" style="color: var(--primary-700); margin-top: 0.5rem;">Comece sua busca</p>
+                <p class="text-sm" style="color: var(--primary-600);">Digite uma profissão, nome ou cidade no campo acima</p>
+                <p class="text-sm" style="color: var(--primary-600);">ou clique em "Perto de mim" para encontrar profissionais próximos</p>
+            </div>
+        </div>
+        
+        <!-- Dica -->
+        <div class="card tip-card animate-fade-in delay-300">
+            <div class="flex-center" style="gap: 0.5rem; justify-content: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">💡</span>
+                <p class="text-bold" style="color: var(--primary-700);">Clique em qualquer profissional para ver detalhes</p>
+            </div>
+            <p class="text-sm" style="color: var(--primary-600);">Avalie os profissionais após o serviço e ajude a comunidade!</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { mostrarAviso, mostrarErro, mostrarSucesso } from './js/toast.js';
+        
+        let prestadoresAtuais = [];
+        let filtroAtual = 'relevancia';
+        let filtroEstado = '';
+        let filtroCidade = '';
+        let localizacaoUsuario = null;
+        let distanciaMaxima = 10;
+        let modoGeolocalizacao = false;
+        
+        // Funções auxiliares
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function obterLocalizacao() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject("Seu navegador não suporta geolocalização");
+                    return;
+                }
+                
+                const statusSpan = document.getElementById('statusLocalizacao');
+                if (statusSpan) statusSpan.innerHTML = "🔄 Obtendo localização...";
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        localizacaoUsuario = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        if (statusSpan) statusSpan.innerHTML = "✅ Localização ativa";
+                        mostrarSucesso("Localização obtida com sucesso!");
+                        resolve(localizacaoUsuario);
+                    },
+                    (error) => {
+                        let mensagem = "";
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                mensagem = "Permissão negada. Ative a localização nas configurações.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                mensagem = "Localização indisponível";
+                                break;
+                            case error.TIMEOUT:
+                                mensagem = "Tempo esgotado";
+                                break;
+                            default:
+                                mensagem = "Erro ao obter localização";
+                        }
+                        if (statusSpan) statusSpan.innerHTML = "❌ " + mensagem;
+                        reject(mensagem);
+                    }
+                );
+            });
+        }
+        
+        async function buscarCoordenadasPorEndereco(cep, cidade, estado) {
+            if (!cep && !cidade) return null;
+            const enderecoCompleto = `${cep || ''}, ${cidade || ''}, ${estado || ''}, Brasil`;
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(enderecoCompleto)}&format=json&limit=1`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+                return null;
+            } catch (error) {
+                console.error("Erro ao buscar coordenadas:", error);
+                return null;
+            }
+        }
+        
+        async function atualizarCoordenadasPrestadores() {
+            const querySnapshot = await getDocs(collection(db, "prestadores"));
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.data();
+                if (!data.localizacao || !data.localizacao.lat) {
+                    const coords = await buscarCoordenadasPorEndereco(data.cep, data.cidade, data.estado);
+                    if (coords) {
+                        await updateDoc(doc(db, "prestadores", docSnap.id), { localizacao: coords });
+                    }
+                }
+            }
+        }
+        
+        async function buscarPrestadoresProximos(profissao, raioKm) {
+            if (!localizacaoUsuario) {
+                mostrarAviso("Ative sua localização primeiro!");
+                return [];
+            }
+            
+            const querySnapshot = await getDocs(collection(db, "prestadores"));
+            const prestadores = [];
+            const termoBusca = profissao?.toLowerCase().trim() || '';
+            
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.data();
+                
+                if (termoBusca) {
+                    const matchProfissao = data.profissao?.toLowerCase().includes(termoBusca);
+                    const matchNome = data.nome?.toLowerCase().includes(termoBusca);
+                    if (!matchProfissao && !matchNome) continue;
+                }
+                
+                let coordenadas = data.localizacao;
+                if (!coordenadas || !coordenadas.lat) {
+                    coordenadas = await buscarCoordenadasPorEndereco(data.cep, data.cidade, data.estado);
+                    if (coordenadas) {
+                        await updateDoc(doc(db, "prestadores", docSnap.id), { localizacao: coordenadas });
+                        data.localizacao = coordenadas;
+                    } else {
+                        continue;
+                    }
+                }
+                
+                const distancia = calcularDistancia(localizacaoUsuario.lat, localizacaoUsuario.lng, data.localizacao.lat, data.localizacao.lng);
+                if (distancia <= raioKm) {
+                    prestadores.push({ id: docSnap.id, ...data, distancia: distancia.toFixed(1) });
+                }
+            }
+            
+            prestadores.sort((a, b) => a.distancia - b.distancia);
+            return prestadores;
+        }
+        
+        function renderizarEstrelas(avaliacao) {
+            const estrelasCheias = Math.floor(avaliacao);
+            let html = '<div class="rating-stars">';
+            for (let i = 0; i < estrelasCheias; i++) html += '<span class="star-filled">★</span>';
+            const estrelasVazias = 5 - Math.ceil(avaliacao);
+            for (let i = 0; i < estrelasVazias; i++) html += '<span class="star-empty">★</span>';
+            html += '</div>';
+            return html;
+        }
+        
+        function ordenarPrestadores(prestadores, ordem) {
+            const sorted = [...prestadores];
+            switch(ordem) {
+                case 'preco_menor': sorted.sort((a, b) => a.preco - b.preco); break;
+                case 'preco_maior': sorted.sort((a, b) => b.preco - a.preco); break;
+                case 'avaliacao': sorted.sort((a, b) => b.avaliacao - a.avaliacao); break;
+                case 'distancia': sorted.sort((a, b) => (a.distancia || 999) - (b.distancia || 999)); break;
+                default: sorted.sort((a, b) => b.avaliacao - a.avaliacao);
+            }
+            return sorted;
+        }
+        
+        function aplicarFiltroLocalizacao(prestadores) {
+            let resultados = [...prestadores];
+            if (filtroEstado) resultados = resultados.filter(p => p.estado === filtroEstado);
+            if (filtroCidade) resultados = resultados.filter(p => p.cidade?.toLowerCase().includes(filtroCidade.toLowerCase()));
+            return resultados;
+        }
+        
+        function renderizarPrestadores(prestadores, isModoGeolocalizacao = false) {
+            const resultadoDiv = document.getElementById('resultadoBusca');
+            let prestadoresFiltrados = isModoGeolocalizacao ? prestadores : aplicarFiltroLocalizacao(prestadores);
+            
+            if (prestadoresFiltrados.length === 0) {
+                resultadoDiv.innerHTML = `
+                    <div class="card text-center" style="background: #fef3c7;">
+                        <span style="font-size: 3rem;">🔍</span>
+                        <p><strong>Nenhum profissional encontrado</strong></p>
+                        <small>Tente outra busca ou remova os filtros</small>
+                    </div>`;
+                return;
+            }
+            
+            const prestadoresOrdenados = ordenarPrestadores(prestadoresFiltrados, filtroAtual);
+            
+            let html = `
+                <div class="results-header">
+                    <div class="results-count">
+                        <strong>${prestadoresFiltrados.length}</strong> profissional(is) encontrado(s)
+                    </div>
+                </div>`;
+            
+            prestadoresOrdenados.forEach((p, index) => {
+                const estrelasHtml = renderizarEstrelas(p.avaliacao);
+                const distanciaHtml = p.distancia ? `<span class="localizacao-badge">📍 ${p.distancia} km</span>` : '';
+                html += `
+                    <div class="professional-card" data-index="${index}">
+                        <div class="flex-between">
+                            <div style="flex: 1;">
+                                <div class="flex-between" style="margin-bottom: 0.5rem;">
+                                    <h3 style="font-weight: 700;">${p.nome}</h3>
+                                    <span class="badge badge-primary" style="font-size: 0.7rem;">${p.profissao}</span>
+                                </div>
+                                <div class="flex-between" style="margin-bottom: 0.5rem;">
+                                    <p style="color: var(--success-600); font-weight: 700;">💰 R$ ${p.preco}/hora</p>
+                                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                        ${estrelasHtml}
+                                        <span style="font-size: 0.75rem;">(${p.totalAvaliacoes})</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span class="localizacao-badge">📍 ${p.cidade || 'Cidade não informada'}/${p.estado || ''}</span>
+                                    <span class="localizacao-badge">📞 ${p.telefone}</span>
+                                    ${distanciaHtml}
+                                </div>
+                            </div>
+                            <div style="font-size: 1.5rem; color: var(--primary-400);">→</div>
+                        </div>
+                    </div>
+                `;
+            });
+            resultadoDiv.innerHTML = html;
+            
+            prestadoresOrdenados.forEach((p, index) => {
+                document.querySelector(`.professional-card[data-index="${index}"]`)?.addEventListener('click', () => {
+                    sessionStorage.setItem('prestadorSelecionado', JSON.stringify(p));
+                    window.location.href = 'detalhes.html';
+                });
+            });
+        }
+        
+        async function buscarPrestadores(termo) {
+            const resultadoDiv = document.getElementById('resultadoBusca');
+            resultadoDiv.innerHTML = '<div class="loading">Buscando profissionais...</div>';
+            
+            if (!termo || termo.trim() === '') {
+                resultadoDiv.innerHTML = `
+                    <div class="card text-center" style="background: #fef3c7;">
+                        <span>⚠️</span>
+                        <p>Digite uma profissão, nome ou cidade para buscar!</p>
+                    </div>`;
+                return;
+            }
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "prestadores"));
+                const termoBusca = termo.toLowerCase().trim();
+                const prestadores = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const profissao = data.profissao?.toLowerCase() || '';
+                    const nome = data.nome?.toLowerCase() || '';
+                    const cidade = data.cidade?.toLowerCase() || '';
+                    
+                    if (profissao.includes(termoBusca) || nome.includes(termoBusca) || cidade.includes(termoBusca)) {
+                        prestadores.push({ id: doc.id, ...data });
+                    }
+                });
+                
+                prestadoresAtuais = prestadores;
+                modoGeolocalizacao = false;
+                
+                if (prestadores.length === 0) {
+                    resultadoDiv.innerHTML = `
+                        <div class="card text-center" style="background: #fef3c7;">
+                            <span style="font-size: 3rem;">🔍</span>
+                            <p><strong>Nenhum resultado encontrado para "${termo}"</strong></p>
+                            <small>💡 Tente: eletricista, encanador, pedreiro, manicure...</small>
+                        </div>`;
+                } else {
+                    renderizarPrestadores(prestadores, false);
+                }
+            } catch (error) {
+                resultadoDiv.innerHTML = `<div class="card" style="background: #fee2e2;">❌ Erro: ${error.message}</div>`;
+            }
+        }
+        
+        function atualizarOrdenacao(ordem) {
+            filtroAtual = ordem;
+            document.querySelectorAll('.order-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.order === ordem);
+            });
+            
+            if (modoGeolocalizacao && localizacaoUsuario) {
+                buscarPrestadoresProximos(document.getElementById('profissao').value, distanciaMaxima)
+                    .then(prestadores => {
+                        prestadoresAtuais = prestadores;
+                        renderizarPrestadores(prestadoresAtuais, true);
+                    });
+            } else if (prestadoresAtuais.length) {
+                renderizarPrestadores(prestadoresAtuais, false);
+            }
+        }
+        
+        // Eventos
+        document.getElementById('buscaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            modoGeolocalizacao = false;
+            buscarPrestadores(document.getElementById('profissao').value);
+        });
+        
+        document.getElementById('buscarPertoBtn').addEventListener('click', async () => {
+            const profissao = document.getElementById('profissao').value;
+            distanciaMaxima = parseInt(document.getElementById('raioBusca').value);
+            document.getElementById('radiusSelector').classList.add('active');
+            
+            mostrarAviso("📍 Obtendo sua localização...");
+            try {
+                await obterLocalizacao();
+                await atualizarCoordenadasPrestadores();
+                const prestadores = await buscarPrestadoresProximos(profissao, distanciaMaxima);
+                
+                if (prestadores.length === 0) {
+                    document.getElementById('resultadoBusca').innerHTML = `
+                        <div class="card text-center" style="background: #fef3c7;">
+                            <span style="font-size: 3rem;">📍</span>
+                            <p><strong>Nenhum profissional encontrado num raio de ${distanciaMaxima} km</strong></p>
+                            <small>💡 Tente aumentar o raio de busca</small>
+                        </div>`;
+                    return;
+                }
+                
+                prestadoresAtuais = prestadores;
+                modoGeolocalizacao = true;
+                renderizarPrestadores(prestadores, true);
+            } catch (error) {
+                mostrarErro(error);
+            }
+        });
+        
+        document.getElementById('raioBusca').addEventListener('change', async () => {
+            if (modoGeolocalizacao && localizacaoUsuario) {
+                distanciaMaxima = parseInt(document.getElementById('raioBusca').value);
+                const prestadores = await buscarPrestadoresProximos(document.getElementById('profissao').value, distanciaMaxima);
+                prestadoresAtuais = prestadores;
+                renderizarPrestadores(prestadores, true);
+            }
+        });
+        
+        document.getElementById('aplicarFiltroLocalBtn').addEventListener('click', () => {
+            filtroEstado = document.getElementById('filtroEstado').value;
+            filtroCidade = document.getElementById('filtroCidade').value;
+            if (prestadoresAtuais.length && !modoGeolocalizacao) {
+                renderizarPrestadores(prestadoresAtuais, false);
+            }
+        });
+        
+        document.getElementById('limparFiltroLocalBtn').addEventListener('click', () => {
+            document.getElementById('filtroEstado').value = '';
+            document.getElementById('filtroCidade').value = '';
+            filtroEstado = '';
+            filtroCidade = '';
+            if (prestadoresAtuais.length && !modoGeolocalizacao) {
+                renderizarPrestadores(prestadoresAtuais, false);
+            }
+        });
+        
+        document.getElementById('clienteBtn').addEventListener('click', () => window.location.href = 'cliente-login.html');
+        document.getElementById('prestadorBtn').addEventListener('click', () => window.location.href = 'prestador-login.html');
+        
+        document.querySelectorAll('.order-btn').forEach(btn => {
+            btn.addEventListener('click', () => atualizarOrdenacao(btn.dataset.order));
+        });
+        
+        document.querySelectorAll('.category-item').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const profissao = chip.getAttribute('data-profissao');
+                document.getElementById('profissao').value = profissao;
+                modoGeolocalizacao = false;
+                buscarPrestadores(profissao);
+            });
+        });
+    </script>
+</body>
+</html>

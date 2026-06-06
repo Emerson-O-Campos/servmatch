@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Área do Cliente</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='index.html'" style="background: none; border: none; color: var(--primary-500); cursor: pointer; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            ← Voltar para home
+        </button>
+        
+        <div class="card login-card" style="text-align: center; max-width: 400px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">👤</div>
+                <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Área do Cliente</h1>
+                <p style="opacity: 0.9; font-size: 0.875rem;">Acesse para solicitar serviços e avaliar profissionais</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label class="input-label">📧 E-mail</label>
+                    <input type="email" id="email" class="input-field" required placeholder="seu@email.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">🔒 Senha</label>
+                    <input type="password" id="senha" class="input-field" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    Entrar
+                </button>
+            </form>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <a href="#" id="esqueciSenhaBtn" style="color: var(--primary-500); font-size: 0.875rem; text-decoration: none;">🔑 Esqueceu sua senha?</a>
+            </div>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <p class="text-sm" style="color: var(--gray-500);">
+                    Não tem uma conta? 
+                    <a href="cadastro-cliente.html" style="color: var(--primary-500); font-weight: bold;">Criar conta</a>
+                </p>
+            </div>
+            
+            <hr style="margin: 1rem 0; border-color: var(--gray-200);">
+            
+            <div class="text-center">
+                <p class="text-sm" style="color: var(--gray-500); margin-bottom: 0.5rem;">É um profissional?</p>
+                <a href="prestador-login.html" class="btn btn-secondary" style="display: block; text-decoration: none;">👨‍🔧 Acessar área do prestador</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { fazerLogin, recuperarSenha } from './js/auth.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { auth } from './js/firebase-config.js';
+        import { mostrarSucesso, mostrarErro, mostrarAviso, mostrarInfo } from './js/toast.js';
+        
+        // Se já estiver logado e com email verificado, ir para área do cliente
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Recarregar para verificar status mais recente
+                await user.reload();
+                if (user.emailVerified) {
+                    window.location.href = 'cliente-painel.html';
+                } else {
+                    // Email não verificado, redirecionar para página de verificação
+                    mostrarInfo("Por favor, verifique seu e-mail antes de fazer login.");
+                    setTimeout(() => {
+                        window.location.href = 'verificar-email.html';
+                    }, 1500);
+                }
+            }
+        });
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            
+            btn.innerHTML = '<div class="loading-spinner" style="display: inline-block;"></div> Entrando...';
+            btn.disabled = true;
+            
+            const result = await fazerLogin(email, senha);
+            
+            if (result.success) {
+                mostrarSucesso("Login realizado! Redirecionando...");
+                setTimeout(() => {
+                    window.location.href = 'cliente-painel.html';
+                }, 1000);
+            } else {
+                if (result.requiresVerification) {
+                    // Redirecionar para página de verificação
+                    mostrarAviso(result.error);
+                    setTimeout(() => {
+                        window.location.href = 'verificar-email.html';
+                    }, 2500);
+                } else {
+                    mostrarErro(result.error);
+                }
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+        
+        // Recuperação de senha
+        document.getElementById('esqueciSenhaBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                mostrarAviso("Digite seu e-mail primeiro!");
+                return;
+            }
+            
+            const btn = document.getElementById('esqueciSenhaBtn');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '⏳ Enviando...';
+            btn.disabled = true;
+            
+            const result = await recuperarSenha(email);
+            
+            if (result.success) {
+                mostrarSucesso("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+            } else {
+                mostrarErro(result.error);
+            }
+            
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

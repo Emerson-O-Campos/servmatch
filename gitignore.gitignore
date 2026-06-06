@@ -1,0 +1,189 @@
+# ============================================
+# ARQUIVOS DE CONFIGURAÇÃO (NUNCA COMMITAR!)
+# ============================================
+
+# Firebase config (arquivo com credenciais)
+js/config.js
+
+# Arquivos de ambiente - CRÍTICO!
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+*.env
+
+# ============================================
+# DEPENDÊNCIAS
+# ============================================
+
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# LOGS
+# ============================================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# SISTEMA OPERACIONAL
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*.tmp
+*.swp
+*.swo
+*~
+.directory
+.Trash-*
+
+# ============================================
+# IDE E EDITORES
+# ============================================
+
+# VS Code
+.vscode/
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+*.code-workspace
+.history/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+.sublime/
+
+# IntelliJ / WebStorm / PHPStorm
+.idea/
+*.iml
+out/
+.idea_modules/
+*.iws
+
+# Atom
+.atom/
+.config
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# ============================================
+# ARQUIVOS DE BUILD E DISTRIBUIÇÃO
+# ============================================
+
+dist/
+build/
+release/
+*.min.js
+*.min.css
+*.bundle.js
+*.bundle.css
+
+# ============================================
+# BACKUP E TEMPORÁRIOS
+# ============================================
+
+*.bak
+*.backup
+*.old
+*.orig
+*.cache
+*.temp
+tmp/
+temp/
+
+# ============================================
+# TESTES E COBERTURA
+# ============================================
+
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+__tests__/
+__mocks__/
+
+# ============================================
+# RELATÓRIOS
+# ============================================
+
+*.pdf
+*.xlsx
+*.csv
+reports/
+
+# ============================================
+# ARQUIVOS DO SISTEMA
+# ============================================
+
+# Servidor local
+.vite/
+.vercel/
+.netlify/
+.parcel-cache/
+
+# Debug
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# SEGURANÇA (arquivos sensíveis)
+# ============================================
+
+*.pem
+*.key
+*.crt
+*.p12
+secrets.json
+credentials.json
+service-account.json
+
+# ============================================
+# ARQUIVOS DO PROJETO (opcional)
+# ============================================
+
+# Ignorar imagens grandes (se quiser)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+
+# Ignorar fonts (se já tiver hospedado)
+# *.woff
+# *.woff2
+# *.ttf
+
+# Backup manual do config.js (caso alguém crie)
+js/config.backup.js
+js/config.old.js

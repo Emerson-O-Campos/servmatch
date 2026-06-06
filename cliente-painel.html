@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Minha Conta</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .menu-cliente {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .menu-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--gray-100);
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+        .menu-btn.active {
+            background: var(--primary-500);
+            color: white;
+        }
+        .pedido-item {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .pedido-item:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-sm);
+            border-color: var(--primary-200);
+        }
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: var(--gray-100);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+            color: var(--gray-700);
+        }
+        .filter-btn.active {
+            background: var(--primary-500);
+            color: white;
+        }
+        .professional-card {
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+        }
+        .professional-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-200);
+        }
+        .rating-stars {
+            display: inline-flex;
+            gap: 0.125rem;
+            align-items: center;
+        }
+        .star-filled {
+            color: #fbbf24;
+        }
+        .star-empty {
+            color: var(--gray-300);
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-500);
+        }
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .search-container .input-field {
+            flex: 1;
+        }
+        
+        /* Cards de estatísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card-cliente {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        .stat-card-cliente:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-600);
+        }
+        .stat-label-cliente {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+        
+        .badge-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .status-pendente { background: #fef3c7; color: #92400e; }
+        .status-aceito { background: #d1fae5; color: #065f46; }
+        .status-recusado { background: #fee2e2; color: #991b1b; }
+        .status-concluido { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-premium animate-fade-in">
+            <div class="flex-between">
+                <div>
+                    <h1 style="font-size: 1.5rem;">👤 Minha Conta</h1>
+                    <p id="userEmail" style="opacity: 0.9; font-size: 0.875rem;"></p>
+                </div>
+                <button id="logoutBtn" class="btn-danger" style="background: rgba(255,255,255,0.2); border: none; border-radius: var(--radius-lg); padding: 0.5rem 1rem;">
+                    Sair
+                </button>
+            </div>
+        </div>
+        
+        <!-- Cards de Resumo (Estatísticas) -->
+        <div class="stats-grid animate-fade-in delay-150">
+            <div class="stat-card-cliente">
+                <div class="stat-number" id="totalPedidos">0</div>
+                <div class="stat-label-cliente">📋 Total de Pedidos</div>
+            </div>
+            <div class="stat-card-cliente">
+                <div class="stat-number" id="totalAvaliacoesCliente">0</div>
+                <div class="stat-label-cliente">⭐ Avaliações Feitas</div>
+            </div>
+            <div class="stat-card-cliente">
+                <div class="stat-number" id="pedidosPendentesCliente">0</div>
+                <div class="stat-label-cliente">⏳ Pedidos Pendentes</div>
+            </div>
+        </div>
+        
+        <div class="menu-cliente">
+            <button class="menu-btn active" data-tab="buscar">🔍 Buscar Profissionais</button>
+            <button class="menu-btn" data-tab="pedidos">📋 Meus Pedidos</button>
+            <button class="menu-btn" data-tab="avaliacoes">⭐ Minhas Avaliações</button>
+        </div>
+        
+        <!-- Aba Buscar -->
+        <div id="tab-buscar" class="tab-content">
+            <div class="card">
+                <h3 class="text-gradient">🔎 Encontrar profissional</h3>
+                
+                <form id="buscaForm">
+                    <div class="search-container">
+                        <input type="text" id="profissao" class="input-field" placeholder="Ex: eletricista, programador, pedreiro..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary" style="width: auto;">🔍 Buscar</button>
+                    </div>
+                </form>
+                
+                <div class="filter-bar">
+                    <span style="font-size: 0.75rem; color: var(--gray-500); align-self: center;">Ordenar:</span>
+                    <button class="filter-btn active" data-order="relevancia">📌 Relevância</button>
+                    <button class="filter-btn" data-order="preco_menor">💰 Menor preço</button>
+                    <button class="filter-btn" data-order="preco_maior">💰 Maior preço</button>
+                    <button class="filter-btn" data-order="avaliacao">⭐ Melhor avaliação</button>
+                </div>
+                
+                <div id="resultadoBusca"></div>
+            </div>
+        </div>
+        
+        <!-- Aba Meus Pedidos -->
+        <div id="tab-pedidos" class="tab-content" style="display: none;">
+            <div class="card">
+                <h3 class="text-gradient">📋 Meus Pedidos</h3>
+                <div id="meusPedidos"></div>
+            </div>
+        </div>
+        
+        <!-- Aba Minhas Avaliações -->
+        <div id="tab-avaliacoes" class="tab-content" style="display: none;">
+            <div class="card">
+                <h3 class="text-gradient">⭐ Minhas Avaliações</h3>
+                <div id="minhasAvaliacoes"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { fazerLogout } from './js/auth.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { protegerPagina } from './js/check-auth.js';
+        import { mostrarSucesso, mostrarErro } from './js/toast.js';
+        
+        await protegerPagina();
+        
+        const user = auth.currentUser;
+        const userId = user.uid;
+        document.getElementById('userEmail').innerHTML = `Olá, <strong>${user.email}</strong>!`;
+        
+        let prestadoresAtuais = [];
+        let filtroAtual = 'relevancia';
+        
+        function renderizarEstrelas(avaliacao) {
+            const estrelasCheias = Math.floor(avaliacao);
+            let html = '<div class="rating-stars">';
+            for (let i = 0; i < estrelasCheias; i++) html += '<span class="star-filled">★</span>';
+            const estrelasVazias = 5 - Math.ceil(avaliacao);
+            for (let i = 0; i < estrelasVazias; i++) html += '<span class="star-empty">★</span>';
+            html += '</div>';
+            return html;
+        }
+        
+        // ========== CARREGAR ESTATÍSTICAS DO CLIENTE ==========
+        async function carregarEstatisticasCliente() {
+            try {
+                // Buscar pedidos
+                const pedidosQuery = query(collection(db, "pedidos"), where("clienteId", "==", userId));
+                const pedidosSnapshot = await getDocs(pedidosQuery);
+                const pedidos = [];
+                pedidosSnapshot.forEach(doc => pedidos.push(doc.data()));
+                
+                // Buscar avaliações
+                const avaliacoesQuery = query(collection(db, "avaliacoes"), where("clienteId", "==", userId));
+                const avaliacoesSnapshot = await getDocs(avaliacoesQuery);
+                
+                // Atualizar cards
+                document.getElementById('totalPedidos').textContent = pedidos.length;
+                document.getElementById('totalAvaliacoesCliente').textContent = avaliacoesSnapshot.size;
+                document.getElementById('pedidosPendentesCliente').textContent = pedidos.filter(p => p.status === 'pendente').length;
+            } catch (error) {
+                console.error("Erro ao carregar estatísticas:", error);
+            }
+        }
+        
+        function ordenarPrestadores(prestadores, ordem) {
+            const sorted = [...prestadores];
+            if (ordem === 'preco_menor') sorted.sort((a, b) => a.preco - b.preco);
+            else if (ordem === 'preco_maior') sorted.sort((a, b) => b.preco - a.preco);
+            else if (ordem === 'avaliacao') sorted.sort((a, b) => b.avaliacao - a.avaliacao);
+            return sorted;
+        }
+        
+        // Busca parcial de prestadores
+        async function buscarPrestadores(termo) {
+            const resultadoDiv = document.getElementById('resultadoBusca');
+            resultadoDiv.innerHTML = '<div class="loading">Buscando...</div>';
+            
+            if (!termo || termo.trim() === '') {
+                resultadoDiv.innerHTML = '<div class="card" style="background: #fef3c7;">⚠️ Digite uma profissão, nome ou cidade para buscar!</div>';
+                return;
+            }
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "prestadores"));
+                const termoBusca = termo.toLowerCase().trim();
+                const prestadores = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const profissao = data.profissao?.toLowerCase() || '';
+                    const nome = data.nome?.toLowerCase() || '';
+                    const cidade = data.cidade?.toLowerCase() || '';
+                    
+                    if (profissao.includes(termoBusca) || nome.includes(termoBusca) || cidade.includes(termoBusca)) {
+                        prestadores.push({ id: doc.id, ...data });
+                    }
+                });
+                
+                if (prestadores.length === 0) {
+                    resultadoDiv.innerHTML = `<div class="card" style="background: #fef3c7;">🔍 Nenhum prestador encontrado para "${termo}"</div>`;
+                } else {
+                    prestadoresAtuais = prestadores;
+                    renderizarPrestadores(prestadoresAtuais);
+                }
+            } catch (error) {
+                resultadoDiv.innerHTML = `<div class="card" style="background: #fee2e2;">❌ Erro: ${error.message}</div>`;
+            }
+        }
+        
+        function renderizarPrestadores(prestadores) {
+            const prestadoresOrdenados = ordenarPrestadores(prestadores, filtroAtual);
+            let html = `<h3>📋 ${prestadores.length} profissional(is) encontrado(s)</h3>`;
+            
+            prestadoresOrdenados.forEach((p, index) => {
+                const estrelasHtml = renderizarEstrelas(p.avaliacao);
+                html += `
+                    <div class="professional-card" data-index="${index}">
+                        <div class="flex-between">
+                            <div style="flex: 1;">
+                                <h3 style="font-weight: 700;">${p.nome}</h3>
+                                <p class="text-bold" style="color: var(--success-600);">💰 R$ ${p.preco}/hora</p>
+                                <div class="flex-between" style="margin-top: 0.5rem;">
+                                    ${estrelasHtml}
+                                    <span style="font-size: 0.75rem;">(${p.totalAvaliacoes})</span>
+                                </div>
+                                <p style="font-size: 0.7rem; color: var(--gray-500); margin-top: 0.25rem;">📍 ${p.cidade}/${p.estado}</p>
+                            </div>
+                            <div style="font-size: 1.25rem; color: var(--primary-400);">→</div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('resultadoBusca').innerHTML = html;
+            
+            prestadoresOrdenados.forEach((p, index) => {
+                document.querySelector(`.professional-card[data-index="${index}"]`)?.addEventListener('click', () => {
+                    sessionStorage.setItem('prestadorSelecionado', JSON.stringify(p));
+                    window.location.href = 'detalhes.html';
+                });
+            });
+        }
+        
+        // Carregar Meus Pedidos
+        async function carregarMeusPedidos() {
+            const pedidosDiv = document.getElementById('meusPedidos');
+            pedidosDiv.innerHTML = '<div class="loading">Carregando seus pedidos...</div>';
+            
+            try {
+                const q = query(collection(db, "pedidos"), where("clienteId", "==", userId));
+                const snapshot = await getDocs(q);
+                const pedidos = [];
+                snapshot.forEach(doc => {
+                    pedidos.push({ id: doc.id, ...doc.data() });
+                });
+                
+                pedidos.sort((a, b) => {
+                    const dateA = a.criadoEm?.toDate() || new Date(0);
+                    const dateB = b.criadoEm?.toDate() || new Date(0);
+                    return dateB - dateA;
+                });
+                
+                if (pedidos.length === 0) {
+                    pedidosDiv.innerHTML = '<div class="text-center" style="padding: 2rem;">📭 Você ainda não fez nenhum pedido</div>';
+                    return;
+                }
+                
+                const statusLabels = {
+                    pendente: '⏳ Pendente',
+                    aceito: '✅ Aceito',
+                    recusado: '❌ Recusado',
+                    concluido: '✓ Concluído'
+                };
+                
+                const statusColors = {
+                    pendente: '#f59e0b',
+                    aceito: '#10b981',
+                    recusado: '#ef4444',
+                    concluido: '#3b82f6'
+                };
+                
+                let html = '';
+                pedidos.forEach(p => {
+                    html += `
+                        <div class="pedido-item">
+                            <div class="flex-between" style="margin-bottom: 0.5rem;">
+                                <span class="badge-status status-${p.status}" style="background: ${statusColors[p.status]}; color: white;">${statusLabels[p.status]}</span>
+                                <small style="color: var(--gray-500);">${p.criadoEm?.toDate().toLocaleDateString()}</small>
+                            </div>
+                            <p><strong>👨‍🔧 Profissional:</strong> ${p.prestadorNome}</p>
+                            <p><strong>📅 Data:</strong> ${p.data} às ${p.horario}</p>
+                            <p><strong>📍 Local:</strong> ${p.endereco}</p>
+                            <p><strong>💰 Valor:</strong> R$ ${p.valorEstimado?.toFixed(2)}</p>
+                            <p><strong>📝 Descrição:</strong> ${p.descricao || '-'}</p>
+                            <div style="margin-top: 0.75rem;">
+                                ${p.status === 'aceito' ? `
+                                    <a href="https://wa.me/${p.prestadorTelefone}" target="_blank" class="btn btn-secondary" style="display: inline-block; text-decoration: none;">💬 Falar com prestador</a>
+                                ` : ''}
+                                ${p.status === 'pendente' ? `
+                                    <button class="btn-cancelar" data-id="${p.id}" style="padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: var(--radius-md); cursor: pointer;">❌ Cancelar pedido</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                pedidosDiv.innerHTML = html;
+                
+                document.querySelectorAll('.btn-cancelar').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const pedidoId = btn.dataset.id;
+                        if (confirm('Tem certeza que deseja cancelar este pedido?')) {
+                            try {
+                                const pedidoRef = doc(db, "pedidos", pedidoId);
+                                await updateDoc(pedidoRef, { status: 'recusado' });
+                                mostrarSucesso("Pedido cancelado!");
+                                await carregarMeusPedidos();
+                                await carregarEstatisticasCliente();
+                            } catch (error) {
+                                mostrarErro(error.message);
+                            }
+                        }
+                    });
+                });
+                
+            } catch (error) {
+                console.error("Erro detalhado ao carregar pedidos:", error);
+                pedidosDiv.innerHTML = `<p style="color: red; text-align: center;">❌ Erro ao carregar: ${error.message}</p>`;
+            }
+        }
+        
+        async function carregarMinhasAvaliacoes() {
+            const avaliacoesDiv = document.getElementById('minhasAvaliacoes');
+            avaliacoesDiv.innerHTML = '<div class="loading">Carregando suas avaliações...</div>';
+            
+            try {
+                const q = query(collection(db, "avaliacoes"), where("clienteId", "==", userId));
+                const snapshot = await getDocs(q);
+                const avaliacoes = [];
+                snapshot.forEach(doc => avaliacoes.push({ id: doc.id, ...doc.data() }));
+                
+                avaliacoes.sort((a, b) => {
+                    const dateA = a.criadoEm?.toDate() || new Date(0);
+                    const dateB = b.criadoEm?.toDate() || new Date(0);
+                    return dateB - dateA;
+                });
+                
+                if (avaliacoes.length === 0) {
+                    avaliacoesDiv.innerHTML = '<div class="text-center" style="padding: 2rem;">⭐ Você ainda não avaliou nenhum profissional</div>';
+                    return;
+                }
+                
+                let html = '';
+                avaliacoes.forEach(a => {
+                    const estrelas = '⭐'.repeat(a.nota);
+                    html += `
+                        <div class="pedido-item">
+                            <div class="flex-between">
+                                <strong>👨‍🔧 ${a.prestadorNome}</strong>
+                                <span>${estrelas} (${a.nota})</span>
+                            </div>
+                            <p>${a.comentario || 'Sem comentário'}</p>
+                            <small style="color: var(--gray-500);">${a.criadoEm?.toDate().toLocaleDateString()}</small>
+                        </div>
+                    `;
+                });
+                avaliacoesDiv.innerHTML = html;
+            } catch (error) {
+                avaliacoesDiv.innerHTML = `<p style="color: red;">❌ Erro ao carregar: ${error.message}</p>`;
+            }
+        }
+        
+        // Eventos de abas
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+                document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
+                
+                if (btn.dataset.tab === 'pedidos') carregarMeusPedidos();
+                if (btn.dataset.tab === 'avaliacoes') carregarMinhasAvaliacoes();
+            });
+        });
+        
+        document.getElementById('buscaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            buscarPrestadores(document.getElementById('profissao').value);
+        });
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                filtroAtual = btn.dataset.order;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (prestadoresAtuais.length) renderizarPrestadores(prestadoresAtuais);
+            });
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => fazerLogout());
+        
+        // Carregar estatísticas e busca inicial
+        carregarEstatisticasCliente();
+        
+        document.getElementById('resultadoBusca').innerHTML = `
+            <div class="card text-center" style="background: linear-gradient(135deg, var(--primary-50), var(--primary-100));">
+                <span style="font-size: 3rem;">🔍</span>
+                <p class="text-bold" style="color: var(--primary-700);">Digite uma profissão, nome ou cidade para buscar</p>
+                <p class="text-sm" style="color: var(--primary-600);">💡 Busca inteligente: encontre profissionais facilmente!</p>
+            </div>
+        `;
+    </script>
+</body>
+</html>

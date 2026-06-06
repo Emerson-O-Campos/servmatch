@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar E-mail - ServMatch</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .verification-card {
+            text-align: center;
+            max-width: 500px;
+            margin: 2rem auto;
+        }
+        .email-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .btn-reenviar {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        .countdown {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card verification-card">
+            <div class="email-icon">✉️</div>
+            <h2>Verifique seu e-mail</h2>
+            <p id="emailDisplay"></p>
+            <p>Enviamos um link de verificação para o e-mail acima.</p>
+            <p><strong>Clique no link para ativar sua conta e fazer login.</strong></p>
+            
+            <div style="background: #fef3c7; padding: 1rem; border-radius: var(--radius-lg); margin: 1rem 0;">
+                <span>⚠️</span>
+                <span>Não esqueça de verificar a pasta de <strong>SPAM</strong>!</span>
+            </div>
+            
+            <button id="reenviarBtn" class="btn-reenviar">📧 Reenviar e-mail de verificação</button>
+            <div id="countdown" class="countdown"></div>
+            
+            <hr style="margin: 1.5rem 0;">
+            
+            <button id="sairBtn" class="btn-secondary">← Voltar para página inicial</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from './js/firebase-config.js';
+        import { onAuthStateChanged, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { reenviarVerificacaoEmail, fazerLogout } from './js/auth.js';
+        import { mostrarSucesso, mostrarErro } from './js/toast.js';
+        
+        let countdownInterval = null;
+        let podeReenviar = true;
+        let tempoRestante = 0;
+        
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            document.getElementById('emailDisplay').innerHTML = `<strong>${user.email}</strong>`;
+            
+            // Se já verificou, redirecionar
+            if (user.emailVerified) {
+                mostrarSucesso("E-mail verificado! Redirecionando...");
+                setTimeout(() => {
+                    window.location.href = 'cliente.html';
+                }, 2000);
+            }
+        });
+        
+        async function reenviar() {
+            if (!podeReenviar) {
+                mostrarErro(`Aguarde ${tempoRestante} segundos para reenviar`);
+                return;
+            }
+            
+            const btn = document.getElementById('reenviarBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Enviando...';
+            
+            const result = await reenviarVerificacaoEmail();
+            
+            if (result.success) {
+                mostrarSucesso(result.message);
+                iniciarCountdown(60); // 60 segundos de cooldown
+            } else {
+                mostrarErro(result.error);
+                btn.disabled = false;
+                btn.innerHTML = '📧 Reenviar e-mail de verificação';
+            }
+        }
+        
+        function iniciarCountdown(segundos) {
+            podeReenviar = false;
+            tempoRestante = segundos;
+            const btn = document.getElementById('reenviarBtn');
+            const countdownDiv = document.getElementById('countdown');
+            
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            countdownInterval = setInterval(() => {
+                tempoRestante--;
+                countdownDiv.innerHTML = `Aguarde ${tempoRestante} segundos para reenviar`;
+                
+                if (tempoRestante <= 0) {
+                    clearInterval(countdownInterval);
+                    podeReenviar = true;
+                    btn.disabled = false;
+                    btn.innerHTML = '📧 Reenviar e-mail de verificação';
+                    countdownDiv.innerHTML = '';
+                }
+            }, 1000);
+        }
+        
+        document.getElementById('reenviarBtn').addEventListener('click', reenviar);
+        document.getElementById('sairBtn').addEventListener('click', () => {
+            fazerLogout();
+        });
+        
+        // Iniciar countdown automático ao carregar página
+        iniciarCountdown(30);
+    </script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Solicitar Serviço</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .info-prestador {
+            background: var(--primary-50);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .feedback-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideInUp 0.3s ease;
+        }
+        .feedback-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .feedback-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .feedback-message { color: var(--gray-600); margin-bottom: 1.5rem; }
+        .feedback-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .success-card .feedback-title { color: #10b981; }
+        .error-card .feedback-title { color: #dc2626; }
+        .warning-card .feedback-title { color: #f59e0b; }
+        
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='detalhes.html'" style="background: none; border: none; color: var(--primary-500); cursor: pointer; margin-bottom: 1rem;">
+            ← Voltar
+        </button>
+        
+        <div class="card animate-fade-in-up">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0; text-align: center;">
+                <div style="font-size: 2rem;">📋</div>
+                <h2 style="font-size: 1.25rem;">Solicitar Serviço</h2>
+                <p id="prestadorNome" style="opacity: 0.9;"></p>
+            </div>
+            
+            <div class="info-prestador" id="infoPrestador"></div>
+            
+            <form id="pedidoForm">
+                <div class="input-group">
+                    <label class="input-label">📅 Data do serviço *</label>
+                    <input type="date" id="data" class="input-field" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">⏰ Horário *</label>
+                    <input type="time" id="horario" class="input-field" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📍 Endereço *</label>
+                    <input type="text" id="endereco" class="input-field" placeholder="Rua, número, bairro, cidade" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📝 Descrição do serviço</label>
+                    <textarea id="descricao" rows="3" class="input-field" placeholder="Descreva o que precisa ser feito..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">⏱️ Duração estimada (horas)</label>
+                    <input type="number" id="duracao" class="input-field" step="0.5" min="0.5" value="1">
+                </div>
+                
+                <div id="valorEstimado" style="background: var(--primary-50); padding: 1rem; border-radius: var(--radius-lg); margin: 1rem 0; text-align: center;">
+                    <p class="text-sm">💰 Valor estimado: <strong id="valorEstimadoText" style="font-size: 1.25rem; color: var(--success-600);">R$ 0</strong></p>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn">📤 Enviar Solicitação</button>
+                <button type="button" id="cancelarBtn" class="btn btn-secondary" style="margin-top: 0.75rem;">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from './js/firebase-config.js';
+        import { collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { verificarEmailVerificado } from './js/auth.js';
+        
+        function mostrarFeedback(tipo, titulo, mensagem, redirectUrl = null) {
+            const modalExistente = document.querySelector('.feedback-overlay');
+            if (modalExistente) modalExistente.remove();
+            
+            const cores = {
+                success: { icon: '✅', cor: '#10b981' },
+                error: { icon: '❌', cor: '#dc2626' },
+                warning: { icon: '⚠️', cor: '#f59e0b' }
+            };
+            
+            const config = cores[tipo] || cores.info;
+            
+            const modal = document.createElement('div');
+            modal.className = 'feedback-overlay';
+            modal.innerHTML = `
+                <div class="feedback-card ${tipo}-card">
+                    <div class="feedback-icon">${config.icon}</div>
+                    <div class="feedback-title" style="color: ${config.cor}">${titulo}</div>
+                    <div class="feedback-message">${mensagem}</div>
+                    <button class="feedback-button" id="feedbackCloseBtn">${redirectUrl ? 'Continuar' : 'Fechar'}</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const closeBtn = document.getElementById('feedbackCloseBtn');
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                if (redirectUrl) window.location.href = redirectUrl;
+            });
+        }
+        
+        // Recuperar prestador selecionado
+        const prestador = JSON.parse(sessionStorage.getItem('prestadorSelecionado'));
+        
+        if (!prestador) {
+            mostrarFeedback('error', 'Erro', 'Profissional não encontrado. Volte e tente novamente.', 'cliente.html');
+            throw new Error('Prestador não encontrado');
+        }
+        
+        document.getElementById('prestadorNome').textContent = `Profissional: ${prestador.nome} - ${prestador.profissao}`;
+        
+        const infoPrestador = document.getElementById('infoPrestador');
+        infoPrestador.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                ${prestador.foto ? `<img src="${prestador.foto}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">` : '<span style="font-size: 2rem;">👨‍🔧</span>'}
+                <div>
+                    <div><strong>${prestador.nome}</strong></div>
+                    <div style="font-size: 0.8rem; color: var(--gray-500);">⭐ ${prestador.avaliacao.toFixed(1)} (${prestador.totalAvaliacoes} avaliações)</div>
+                    <div style="font-size: 0.8rem; color: var(--success-600);">💰 R$ ${prestador.preco}/hora</div>
+                </div>
+            </div>
+        `;
+        
+        let clienteLogado = null;
+        let precoHora = prestador.preco;
+        
+        // Verificar se cliente está logado e com email verificado
+        onAuthStateChanged(auth, async (user) => {
+            console.log("Auth state changed:", user ? "Logado" : "Não logado");
+            
+            if (!user) {
+                mostrarFeedback('warning', 'Login necessário', 'Você precisa estar logado para solicitar um serviço.', 'cliente-login.html');
+                return;
+            }
+            
+            // Verificar se email foi verificado
+            const emailVerificado = await verificarEmailVerificado();
+            if (!emailVerificado) {
+                mostrarFeedback('warning', 'Verifique seu e-mail', 'Você precisa verificar seu e-mail antes de fazer pedidos.', 'verificar-email.html');
+                return;
+            }
+            
+            clienteLogado = user;
+            console.log("Cliente logado e verificado:", clienteLogado.email);
+        });
+        
+        // Calcular valor estimado
+        function calcularValor() {
+            const duracao = parseFloat(document.getElementById('duracao').value) || 0;
+            const valor = duracao * precoHora;
+            document.getElementById('valorEstimadoText').textContent = `R$ ${valor.toFixed(2)}`;
+            return valor;
+        }
+        
+        document.getElementById('duracao').addEventListener('input', calcularValor);
+        calcularValor();
+        
+        // Data mínima = hoje
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('data').min = hoje;
+        
+        // Envio do formulário
+        document.getElementById('pedidoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Verificar se está logado
+            if (!clienteLogado) {
+                mostrarFeedback('warning', 'Faça login', 'Você precisa estar logado para solicitar um serviço.', 'cliente-login.html');
+                return;
+            }
+            
+            // Verificar email novamente antes de enviar
+            const emailVerificado = await verificarEmailVerificado();
+            if (!emailVerificado) {
+                mostrarFeedback('warning', 'Verifique seu e-mail', 'Você precisa verificar seu e-mail antes de fazer pedidos.', 'verificar-email.html');
+                return;
+            }
+            
+            // Pegar valores
+            const data = document.getElementById('data').value;
+            const horario = document.getElementById('horario').value;
+            const endereco = document.getElementById('endereco').value;
+            const descricao = document.getElementById('descricao').value;
+            const duracao = parseFloat(document.getElementById('duracao').value);
+            const valorEstimado = duracao * precoHora;
+            
+            // Validar campos obrigatórios
+            if (!data) {
+                mostrarFeedback('warning', 'Data não informada', 'Selecione uma data para o serviço.');
+                return;
+            }
+            
+            if (!horario) {
+                mostrarFeedback('warning', 'Horário não informado', 'Selecione um horário para o serviço.');
+                return;
+            }
+            
+            if (!endereco || endereco.trim() === '') {
+                mostrarFeedback('warning', 'Endereço não informado', 'Informe o endereço onde o serviço será realizado.');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<div class="loading-spinner"></div> Enviando...';
+            btn.disabled = true;
+            
+            try {
+                const docRef = await addDoc(collection(db, "pedidos"), {
+                    prestadorId: prestador.id,
+                    prestadorNome: prestador.nome,
+                    prestadorTelefone: prestador.telefone,
+                    prestadorUserId: prestador.userId,
+                    clienteId: clienteLogado.uid,
+                    clienteEmail: clienteLogado.email,
+                    clienteNome: clienteLogado.email.split('@')[0],
+                    data: data,
+                    horario: horario,
+                    endereco: endereco,
+                    descricao: descricao || "",
+                    duracao: duracao,
+                    valorEstimado: valorEstimado,
+                    status: 'pendente',
+                    criadoEm: Timestamp.now()
+                });
+                
+                console.log("Pedido criado com ID:", docRef.id);
+                mostrarFeedback('success', 'Solicitação Enviada!', 'Seu pedido foi enviado com sucesso! O prestador entrará em contato em breve.', 'cliente-painel.html');
+                
+            } catch (error) {
+                console.error("Erro detalhado:", error);
+                
+                if (error.code === 'permission-denied') {
+                    mostrarFeedback('error', 'Erro de permissão', 'Você não tem permissão para criar pedidos. Verifique se seu e-mail está verificado.');
+                } else {
+                    mostrarFeedback('error', 'Erro ao enviar', error.message || 'Ocorreu um erro. Tente novamente.');
+                }
+                
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+        
+        document.getElementById('cancelarBtn').addEventListener('click', () => {
+            window.location.href = 'detalhes.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Editar Perfil</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .preview-foto-editar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0.5rem auto;
+            display: block;
+            border: 3px solid var(--primary-500);
+        }
+        .info-card-editar {
+            background: var(--primary-50);
+            border-radius: var(--radius-lg);
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .campo-obrigatorio {
+            color: #ef4444;
+            margin-left: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card animate-fade-in-up" style="max-width: 500px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0; text-align: center;">
+                <div style="font-size: 2rem;">✏️</div>
+                <h2 style="font-size: 1.25rem;">Editar Perfil</h2>
+                <p style="font-size: 0.75rem; opacity: 0.9;">Atualize suas informações profissionais</p>
+            </div>
+            
+            <div class="info-card-editar">
+                <span>💡</span> As informações abaixo serão visíveis para os clientes
+            </div>
+            
+            <form id="formEditar">
+                <div class="input-group">
+                    <label class="input-label">👤 Nome completo <span class="campo-obrigatorio">*</span></label>
+                    <input type="text" name="nome" id="nome" class="input-field" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🔧 Profissão <span class="campo-obrigatorio">*</span></label>
+                    <input type="text" name="profissao" id="profissao" class="input-field" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📞 WhatsApp <span class="campo-obrigatorio">*</span></label>
+                    <input type="tel" name="telefone" id="telefone" class="input-field" required>
+                    <small>Digite apenas números com DDD (ex: 11999999999)</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">💰 Preço por hora (R$) <span class="campo-obrigatorio">*</span></label>
+                    <input type="number" name="preco" id="preco" class="input-field" step="10" required min="10" max="999">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📝 Descrição dos serviços</label>
+                    <textarea name="descricao" id="descricao" class="input-field" rows="4" placeholder="Conte sobre sua experiência, diferenciais, materiais que utiliza..."></textarea>
+                    <small>Uma boa descrição atrai mais clientes!</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🖼️ URL da sua foto</label>
+                    <input type="url" name="foto" id="foto" class="input-field" placeholder="https://exemplo.com/sua-foto.jpg">
+                    <div id="previewContainer" style="text-align: center;"></div>
+                    <small>Adicione uma URL de imagem para aparecer no seu perfil</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn">💾 Salvar Alterações</button>
+                <button type="button" id="voltarBtn" class="btn btn-secondary" style="margin-top: 0.75rem;">← Voltar</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { protegerPagina } from './js/check-auth.js';
+        import { mostrarSucesso, mostrarErro, mostrarAviso } from './js/toast.js';
+        
+        await protegerPagina();
+        
+        const docId = sessionStorage.getItem('prestadorDocId');
+        const dados = JSON.parse(sessionStorage.getItem('prestadorDados') || '{}');
+        
+        function validarTelefone(telefone) {
+            const numeros = telefone.replace(/\D/g, '');
+            return numeros.length >= 10 && numeros.length <= 11;
+        }
+        
+        if (dados) {
+            document.getElementById('nome').value = dados.nome || '';
+            document.getElementById('profissao').value = dados.profissao || '';
+            document.getElementById('telefone').value = dados.telefone || '';
+            document.getElementById('preco').value = dados.preco || '';
+            document.getElementById('descricao').value = dados.descricao || '';
+            document.getElementById('foto').value = dados.foto || '';
+            
+            // Preview da foto
+            if (dados.foto) {
+                document.getElementById('previewContainer').innerHTML = `<img src="${dados.foto}" class="preview-foto-editar" alt="Preview" onerror="this.style.display='none'">`;
+            }
+        }
+        
+        // Preview da foto ao digitar
+        document.getElementById('foto').addEventListener('input', (e) => {
+            const url = e.target.value;
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                document.getElementById('previewContainer').innerHTML = `<img src="${url}" class="preview-foto-editar" alt="Preview" onerror="this.style.display='none'">`;
+            } else {
+                document.getElementById('previewContainer').innerHTML = '';
+            }
+        });
+        
+        document.getElementById('formEditar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const telefone = document.getElementById('telefone').value;
+            const preco = document.getElementById('preco').value;
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            
+            if (!validarTelefone(telefone)) {
+                mostrarAviso("Telefone inválido! Use DDD + número (10 ou 11 dígitos)");
+                return;
+            }
+            
+            if (preco < 10) {
+                mostrarAviso("Preço mínimo é R$ 10,00 por hora");
+                return;
+            }
+            
+            const atualizacao = {
+                nome: document.getElementById('nome').value,
+                profissao: document.getElementById('profissao').value.toLowerCase(),
+                telefone: telefone.replace(/\D/g, ''),
+                preco: parseFloat(preco),
+                descricao: document.getElementById('descricao').value,
+                foto: document.getElementById('foto').value
+            };
+            
+            btn.innerHTML = '<div class="loading-spinner" style="display: inline-block;"></div> Salvando...';
+            btn.disabled = true;
+            
+            try {
+                const prestadorRef = doc(db, "prestadores", docId);
+                await updateDoc(prestadorRef, atualizacao);
+                
+                // Atualizar sessionStorage
+                const dadosAtualizados = { ...dados, ...atualizacao };
+                sessionStorage.setItem('prestadorDados', JSON.stringify(dadosAtualizados));
+                
+                mostrarSucesso("Perfil atualizado com sucesso!");
+                setTimeout(() => {
+                    window.location.href = 'prestador.html';
+                }, 1500);
+            } catch (error) {
+                mostrarErro(error.message);
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+        
+        document.getElementById('voltarBtn').addEventListener('click', () => {
+            window.location.href = 'prestador.html';
+        });
+    </script>
+</body>
+</html>

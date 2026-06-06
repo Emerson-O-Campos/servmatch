@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ServMatch - Encontre Profissionais</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-500);
+        }
+        
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .professional-card {
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+        }
+        
+        .professional-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-200);
+        }
+        
+        .btn-tornar-prestador {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+            font-weight: 600;
+            padding: 0.875rem 1rem;
+            border: none;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all var(--duration-fast);
+            font-size: 0.875rem;
+        }
+        
+        .btn-tornar-prestador:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            opacity: 0.95;
+        }
+        
+        .categorias-populares {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .categoria-chip {
+            background: var(--gray-100);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-out);
+            color: var(--gray-700);
+        }
+        
+        .categoria-chip:hover {
+            background: var(--primary-500);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .rating-stars {
+            display: inline-flex;
+            gap: 0.125rem;
+            align-items: center;
+        }
+        
+        .star-filled {
+            color: #fbbf24;
+        }
+        
+        .star-empty {
+            color: var(--gray-300);
+        }
+        
+        .result-card {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .sugestoes-busca {
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--gray-500);
+        }
+        
+        .search-info {
+            background: var(--primary-50);
+            border-radius: var(--radius-lg);
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.75rem;
+            color: var(--primary-700);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Premium -->
+        <div class="header-premium animate-fade-in">
+            <div class="flex-between">
+                <div>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔍 ServMatch</h1>
+                    <p style="opacity: 0.9; font-size: 0.875rem;">Encontre os melhores profissionais</p>
+                </div>
+                <button id="logoutBtn" class="btn-danger" style="background: rgba(255,255,255,0.2); border: none; border-radius: var(--radius-lg); padding: 0.5rem 1rem;">
+                    Sair
+                </button>
+            </div>
+        </div>
+        
+        <!-- Card de Busca -->
+        <div class="card animate-slide-left delay-100">
+            <div class="flex-between" style="margin-bottom: 1rem;">
+                <div id="userEmail" class="text-sm" style="color: var(--gray-500);"></div>
+                <span class="badge badge-primary">👋 Cliente</span>
+            </div>
+            
+            <form id="buscaForm">
+                <div class="input-group">
+                    <label class="input-label">🔧 Buscar profissional</label>
+                    <input type="text" id="profissao" class="input-field" placeholder="Ex: eletricista, manicure, pedreiro...">
+                    <div class="sugestoes-busca">💡 Dica: Você pode buscar por nome, profissão ou cidade</div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="buscarBtn">
+                    🔍 Buscar Agora
+                </button>
+            </form>
+            
+            <!-- Categorias Populares -->
+            <div style="margin-top: 1.5rem;">
+                <p class="text-sm text-bold mb-2" style="color: var(--gray-600);">📂 Categorias populares:</p>
+                <div class="categorias-populares">
+                    <span class="categoria-chip" data-profissao="eletricista">⚡ Eletricista</span>
+                    <span class="categoria-chip" data-profissao="encanador">🚰 Encanador</span>
+                    <span class="categoria-chip" data-profissao="pedreiro">🧱 Pedreiro</span>
+                    <span class="categoria-chip" data-profissao="faxineira">🧹 Faxineira</span>
+                    <span class="categoria-chip" data-profissao="manicure">💅 Manicure</span>
+                    <span class="categoria-chip" data-profissao="pintor">🎨 Pintor</span>
+                    <span class="categoria-chip" data-profissao="programador">💻 Programador</span>
+                    <span class="categoria-chip" data-profissao="marceneiro">🪑 Marceneiro</span>
+                    <span class="categoria-chip" data-profissao="jardineiro">🌿 Jardineiro</span>
+                </div>
+            </div>
+            
+            <button id="tornarPrestadorBtn" class="btn-tornar-prestador">
+                👨‍🔧 Quero oferecer meus serviços
+            </button>
+        </div>
+        
+        <!-- Resultados da Busca -->
+        <div id="resultadoBusca"></div>
+        
+        <!-- Dica -->
+        <div class="card text-center animate-fade-in delay-300" style="background: linear-gradient(135deg, var(--primary-50), var(--primary-100)); border: none;">
+            <div class="flex-center" style="gap: 0.5rem; justify-content: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem;">📌</span>
+                <p class="text-bold" style="color: var(--primary-700);">Clique em qualquer profissional para ver detalhes</p>
+            </div>
+            <p class="text-sm" style="color: var(--primary-600);">💡 Dica: Use as categorias acima para busca rápida!</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { fazerLogout } from './js/auth.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { protegerPagina } from './js/check-auth.js';
+        import { mostrarSucesso, mostrarErro, mostrarAviso } from './js/toast.js';
+        
+        // Proteger página
+        await protegerPagina();
+        
+        // Variável para controlar se já verificou
+        let verificouPrestador = false;
+        
+        // Mostrar email do usuário
+        const userEmail = sessionStorage.getItem('userEmail');
+        const userId = sessionStorage.getItem('userId');
+        document.getElementById('userEmail').innerHTML = `Olá, <strong>${userEmail}</strong>!`;
+        
+        // Função para renderizar estrelas
+        function renderizarEstrelas(avaliacao) {
+            const estrelasCheias = Math.floor(avaliacao);
+            const temMeiaEstrela = avaliacao % 1 >= 0.5;
+            let html = '<div class="rating-stars">';
+            
+            for (let i = 0; i < estrelasCheias; i++) {
+                html += '<span class="star-filled">★</span>';
+            }
+            
+            if (temMeiaEstrela) {
+                html += '<span class="star-filled">½</span>';
+            }
+            
+            const estrelasVazias = 5 - Math.ceil(avaliacao);
+            for (let i = 0; i < estrelasVazias; i++) {
+                html += '<span class="star-empty">★</span>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // ========== VERIFICAR SE USUÁRIO JÁ É PRESTADOR ==========
+        async function verificarSeEhPrestador() {
+            if (verificouPrestador) return;
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "prestadores"));
+                let ehPrestador = false;
+                querySnapshot.forEach((doc) => {
+                    if (doc.data().userId === userId) {
+                        ehPrestador = true;
+                    }
+                });
+                
+                if (ehPrestador) {
+                    const confirmar = confirm("Você já está cadastrado como prestador! Deseja ir para a área do prestador?");
+                    if (confirmar) {
+                        window.location.href = 'prestador.html';
+                    } else {
+                        const btn = document.getElementById('tornarPrestadorBtn');
+                        if (btn) btn.style.display = 'none';
+                    }
+                }
+                verificouPrestador = true;
+            } catch (error) {
+                console.error("Erro ao verificar prestador:", error);
+            }
+        }
+        
+        // ========== BUSCAR PRESTADORES COM BUSCA PARCIAL (MELHORADA) ==========
+        async function buscarPrestadores(termo) {
+            const resultadoDiv = document.getElementById('resultadoBusca');
+            resultadoDiv.innerHTML = '<div class="loading">Buscando profissionais...</div>';
+            
+            if (!termo || termo.trim() === '') {
+                resultadoDiv.innerHTML = `
+                    <div class="card" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+                        <div class="flex-center" style="gap: 0.5rem;">
+                            <span>⚠️</span>
+                            <span>Digite uma profissão, nome ou cidade para buscar!</span>
+                        </div>
+                    </div>`;
+                return;
+            }
+            
+            try {
+                // Buscar TODOS os prestadores e filtrar no cliente (busca parcial)
+                const querySnapshot = await getDocs(collection(db, "prestadores"));
+                const termoBusca = termo.toLowerCase().trim();
+                const prestadores = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const profissao = data.profissao?.toLowerCase() || '';
+                    const nome = data.nome?.toLowerCase() || '';
+                    const cidade = data.cidade?.toLowerCase() || '';
+                    const descricao = data.descricao?.toLowerCase() || '';
+                    
+                    // Busca parcial em múltiplos campos (LIKE)
+                    if (profissao.includes(termoBusca) || 
+                        nome.includes(termoBusca) || 
+                        cidade.includes(termoBusca) ||
+                        descricao.includes(termoBusca)) {
+                        prestadores.push({ id: doc.id, ...data });
+                    }
+                });
+                
+                if (prestadores.length === 0) {
+                    resultadoDiv.innerHTML = `
+                        <div class="card" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+                            <div class="text-center">
+                                <span style="font-size: 3rem;">🔍</span>
+                                <p><strong>Nenhum prestador encontrado para "${termo}"</strong></p>
+                                <small>📌 Tente: eletricista, encanador, manicure, pedreiro, ou busque por cidade...</small>
+                            </div>
+                        </div>`;
+                } else {
+                    let html = `<div class="search-info">
+                                    🔍 Encontramos <strong>${prestadores.length}</strong> resultado(s) para "<strong>${termo}</strong>"
+                                </div>`;
+                    html += `<div style="margin-bottom: 1rem;">
+                                <h3 class="text-gradient" style="font-size: 1.125rem;">📋 ${prestadores.length} profissional(is) encontrado(s)</h3>
+                            </div>`;
+                    
+                    prestadores.forEach((p, index) => {
+                        const estrelasHtml = renderizarEstrelas(p.avaliacao);
+                        html += `
+                            <div class="professional-card result-card" data-index="${index}" style="animation-delay: ${index * 0.05}s">
+                                <div class="flex-between">
+                                    <div style="flex: 1;">
+                                        <div class="flex-between" style="margin-bottom: 0.5rem;">
+                                            <h3 style="font-weight: 700; font-size: 1rem; color: var(--gray-800);">${p.nome}</h3>
+                                            <span class="badge badge-primary" style="font-size: 0.7rem;">${p.profissao}</span>
+                                        </div>
+                                        <div class="flex-between" style="margin-bottom: 0.5rem;">
+                                            <p style="color: var(--success-600); font-weight: 700;">💰 R$ ${p.preco}/hora</p>
+                                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                ${estrelasHtml}
+                                                <span style="font-size: 0.75rem; color: var(--gray-500);">(${p.totalAvaliacoes})</span>
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                                            <span class="localizacao-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: var(--gray-100); padding: 0.2rem 0.5rem; border-radius: var(--radius-full); font-size: 0.7rem;">
+                                                📍 ${p.cidade || 'Cidade não informada'}/${p.estado || ''}
+                                            </span>
+                                            <span class="localizacao-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: var(--gray-100); padding: 0.2rem 0.5rem; border-radius: var(--radius-full); font-size: 0.7rem;">
+                                                📞 ${p.telefone}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 1.25rem; color: var(--primary-400);">→</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultadoDiv.innerHTML = html;
+                    
+                    // Adicionar evento de clique nos cards
+                    prestadores.forEach((p, index) => {
+                        const card = document.querySelector(`.professional-card[data-index="${index}"]`);
+                        if (card) {
+                            card.addEventListener('click', () => {
+                                sessionStorage.setItem('prestadorSelecionado', JSON.stringify(p));
+                                window.location.href = 'detalhes.html';
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Erro na busca:", error);
+                resultadoDiv.innerHTML = `
+                    <div class="card" style="background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444;">
+                        <div class="flex-center" style="gap: 0.5rem;">
+                            <span>❌</span>
+                            <span>Erro ao buscar: ${error.message}</span>
+                        </div>
+                    </div>`;
+            }
+        }
+        
+        // ========== IR PARA CADASTRO DE PRESTADOR ==========
+        function irParaCadastroPrestador() {
+            const confirmar = confirm("Você quer se cadastrar como prestador de serviços? Isso permitirá que clientes encontrem você!");
+            if (confirmar) {
+                window.location.href = 'cadastro-prestador.html';
+            }
+        }
+        
+        // ========== EVENTOS ==========
+        document.getElementById('buscaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const profissao = document.getElementById('profissao').value;
+            buscarPrestadores(profissao);
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            fazerLogout();
+        });
+        
+        document.getElementById('tornarPrestadorBtn').addEventListener('click', () => {
+            irParaCadastroPrestador();
+        });
+        
+        // Categorias populares
+        document.querySelectorAll('.categoria-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const profissao = chip.getAttribute('data-profissao');
+                document.getElementById('profissao').value = profissao;
+                buscarPrestadores(profissao);
+            });
+        });
+        
+        // ========== EXECUTAR VERIFICAÇÃO ==========
+        verificarSeEhPrestador();
+        
+        // Também verificar quando o auth state mudar
+        onAuthStateChanged(auth, async (user) => {
+            if (user && !verificouPrestador) {
+                await verificarSeEhPrestador();
+            }
+        });
+        
+        // Carregar busca inicial vazia
+        document.getElementById('resultadoBusca').innerHTML = `
+            <div class="card text-center" style="background: linear-gradient(135deg, var(--primary-50), var(--primary-100)); border: none;">
+                <span style="font-size: 3rem;">🔍</span>
+                <p class="text-bold" style="color: var(--primary-700);">Digite uma profissão, nome ou cidade para buscar</p>
+                <p class="text-sm" style="color: var(--primary-600);">💡 Busca inteligente: encontre profissionais por nome, profissão ou localização!</p>
+            </div>
+        `;
+    </script>
+</body>
+</html>

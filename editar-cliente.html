@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - ServMatch</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>✏️ Meu Perfil</h2>
+            <form id="perfilForm">
+                <div class="input-group">
+                    <label>👤 Nome</label>
+                    <input type="text" id="nome" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>📞 Telefone</label>
+                    <input type="tel" id="telefone" class="input-field">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // ✅ CORRIGIDO: Adicionar proteção de página para cliente
+        import { protegerPaginaCliente } from './js/check-auth.js';
+        import { auth, db } from './js/firebase-config.js';
+        import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { mostrarSucesso, mostrarErro } from './js/toast.js';
+        
+        // Proteger página (redireciona se não estiver logado)
+        await protegerPaginaCliente();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            window.location.href = 'cliente-login.html';
+        }
+        
+        const userRef = doc(db, "clientes", user.uid);
+        
+        const snapshot = await getDoc(userRef);
+        if (snapshot.exists()) {
+            document.getElementById('nome').value = snapshot.data().nome || '';
+            document.getElementById('telefone').value = snapshot.data().telefone || '';
+        }
+        
+        document.getElementById('perfilForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.querySelector('button[type="submit"]');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '⏳ Salvando...';
+            btn.disabled = true;
+            
+            try {
+                await setDoc(userRef, {
+                    nome: document.getElementById('nome').value,
+                    telefone: document.getElementById('telefone').value,
+                    email: user.email
+                }, { merge: true });
+                
+                mostrarSucesso("Perfil atualizado com sucesso!");
+                setTimeout(() => {
+                    window.location.href = 'cliente-painel.html';
+                }, 1500);
+            } catch (error) {
+                console.error("Erro:", error);
+                mostrarErro(error.message);
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

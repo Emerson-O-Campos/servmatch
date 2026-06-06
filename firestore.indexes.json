@@ -1,0 +1,54 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "prestadores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "profissao", "order": "ASCENDING" },
+        { "fieldPath": "avaliacao", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "prestadores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "profissao", "order": "ASCENDING" },
+        { "fieldPath": "preco", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "prestadores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "cidade", "order": "ASCENDING" },
+        { "fieldPath": "avaliacao", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pedidos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "prestadorId", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pedidos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clienteId", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "avaliacoes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "prestadorId", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

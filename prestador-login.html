@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Área do Prestador</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='index.html'" style="background: none; border: none; color: var(--primary-500); cursor: pointer; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            ← Voltar para home
+        </button>
+        
+        <div class="card login-card" style="text-align: center; max-width: 400px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">👨‍🔧</div>
+                <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Área do Prestador</h1>
+                <p style="opacity: 0.9; font-size: 0.875rem;">Acesse seu painel e gerencie seus serviços</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label class="input-label">📧 E-mail</label>
+                    <input type="email" id="email" class="input-field" required placeholder="seu@email.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">🔒 Senha</label>
+                    <input type="password" id="senha" class="input-field" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    Entrar
+                </button>
+            </form>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <a href="#" id="esqueciSenhaBtn" style="color: var(--primary-500); font-size: 0.875rem; text-decoration: none;">🔑 Esqueceu sua senha?</a>
+            </div>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <p class="text-sm" style="color: var(--gray-500);">
+                    Não tem uma conta de prestador? 
+                    <a href="cadastro-prestador.html" style="color: var(--primary-500); font-weight: bold;">Cadastrar como prestador</a>
+                </p>
+            </div>
+            
+            <hr style="margin: 1rem 0; border-color: var(--gray-200);">
+            
+            <div class="text-center">
+                <p class="text-sm" style="color: var(--gray-500); margin-bottom: 0.5rem;">É um cliente?</p>
+                <a href="cliente-login.html" class="btn btn-secondary" style="display: block; text-decoration: none;">👤 Acessar área do cliente</a>
+            </div>
+            
+            <p class="text-sm" style="color: var(--gray-500); margin-top: 1rem;">
+                🔒 Apenas prestadores de serviços têm acesso
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { fazerLogin, fazerLogout, verificarEmailVerificado, reenviarVerificacaoEmail } from './js/auth.js';
+        import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { auth, db } from './js/firebase-config.js';
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { mostrarSucesso, mostrarErro, mostrarAviso } from './js/toast.js';
+        
+        // Se já estiver logado, verificar se é prestador e email verificado
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // ✅ CORRIGIDO: Verificar email antes de prosseguir
+                const emailVerificado = await verificarEmailVerificado();
+                if (!emailVerificado) {
+                    mostrarAviso("📧 Seu e-mail não foi verificado! Enviamos um novo link.");
+                    await reenviarVerificacaoEmail();
+                    setTimeout(() => {
+                        window.location.href = 'verificar-email.html';
+                    }, 2000);
+                    return;
+                }
+                
+                // Verificar se é prestador
+                const q = query(collection(db, "prestadores"), where("userId", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    window.location.href = 'prestador.html';
+                }
+            }
+        });
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            
+            btn.innerHTML = '<div class="loading-spinner" style="display: inline-block;"></div> Entrando...';
+            btn.disabled = true;
+            
+            const result = await fazerLogin(email, senha);
+            
+            if (result.success) {
+                // ✅ CORRIGIDO: Verificar email antes de prosseguir
+                const emailVerificado = await verificarEmailVerificado();
+                if (!emailVerificado) {
+                    mostrarAviso("📧 E-mail não verificado! Enviamos um novo link de verificação.");
+                    await reenviarVerificacaoEmail();
+                    await fazerLogout();
+                    setTimeout(() => {
+                        window.location.href = 'verificar-email.html';
+                    }, 2000);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                // Verificar se é prestador
+                const q = query(collection(db, "prestadores"), where("userId", "==", result.user.uid));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    mostrarErro("Você não está cadastrado como prestador! Acesse 'Cadastrar como prestador' para criar sua conta.");
+                    await fazerLogout();
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                mostrarSucesso("Login realizado! Redirecionando...");
+                setTimeout(() => {
+                    window.location.href = 'prestador.html';
+                }, 1000);
+            } else {
+                mostrarErro(result.error);
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+        
+        // Recuperação de senha
+        document.getElementById('esqueciSenhaBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                mostrarAviso("Digite seu e-mail primeiro!");
+                return;
+            }
+            
+            const btn = document.getElementById('esqueciSenhaBtn');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '⏳ Enviando...';
+            btn.disabled = true;
+            
+            try {
+                await sendPasswordResetEmail(auth, email);
+                mostrarSucesso("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+            } catch (error) {
+                let mensagem = error.message;
+                if (error.code === 'auth/user-not-found') {
+                    mensagem = 'E-mail não encontrado';
+                } else if (error.code === 'auth/invalid-email') {
+                    mensagem = 'E-mail inválido';
+                }
+                mostrarErro(mensagem);
+            }
+            
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Detalhes do Profissional</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--primary-500);
+            cursor: pointer;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            transition: all var(--duration-fast);
+        }
+        .back-button:hover {
+            color: var(--primary-700);
+            transform: translateX(-4px);
+        }
+        .detail-card {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        .rating-stars {
+            display: inline-flex;
+            gap: 0.125rem;
+        }
+        .star-filled { color: #fbbf24; }
+        .star-empty { color: var(--gray-300); }
+        
+        .info-card {
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .info-label {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+        .foto-prestador-grande {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            display: block;
+            border: 4px solid white;
+            box-shadow: var(--shadow-lg);
+        }
+        .badge-localizacao {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--primary-50);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            color: var(--primary-700);
+        }
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+        .btn-whatsapp:hover {
+            background: linear-gradient(135deg, #128C7E, #075E54);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='index.html'" class="back-button">
+            ← Voltar para busca
+        </button>
+        
+        <div id="detalhes" class="card detail-card"></div>
+    </div>
+
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        import { auth, db } from './js/firebase-config.js';
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        
+        let usuarioLogado = null;
+        let userId = null;
+        
+        onAuthStateChanged(auth, (user) => {
+            usuarioLogado = user;
+            userId = user ? user.uid : null;
+            atualizarBotoes();
+        });
+        
+        function atualizarBotoes() {
+            const btnAvaliar = document.getElementById('avaliarBtn');
+            const btnSolicitar = document.getElementById('solicitarBtn');
+            
+            if (btnAvaliar) {
+                if (!usuarioLogado) {
+                    btnAvaliar.innerHTML = '⭐ Avaliar (faça login primeiro)';
+                    btnAvaliar.style.background = 'linear-gradient(135deg, #9ca3af, #6b7280)';
+                } else {
+                    btnAvaliar.innerHTML = '⭐ Avaliar este profissional';
+                    btnAvaliar.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                }
+            }
+            
+            if (btnSolicitar) {
+                if (!usuarioLogado) {
+                    btnSolicitar.innerHTML = '📋 Solicitar (faça login como cliente)';
+                    btnSolicitar.style.background = 'linear-gradient(135deg, #9ca3af, #6b7280)';
+                } else {
+                    btnSolicitar.innerHTML = '📋 Solicitar este serviço';
+                    btnSolicitar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                }
+            }
+        }
+        
+        function renderizarEstrelas(avaliacao) {
+            const estrelasCheias = Math.floor(avaliacao);
+            const temMeiaEstrela = avaliacao % 1 >= 0.5;
+            let html = '<div class="rating-stars">';
+            for (let i = 0; i < estrelasCheias; i++) html += '<span class="star-filled">★</span>';
+            if (temMeiaEstrela) html += '<span class="star-filled">½</span>';
+            const estrelasVazias = 5 - Math.ceil(avaliacao);
+            for (let i = 0; i < estrelasVazias; i++) html += '<span class="star-empty">★</span>';
+            html += '</div>';
+            return html;
+        }
+        
+        async function verificarAvaliacaoExistente(prestadorId, clienteId) {
+            if (!clienteId) return false;
+            try {
+                const q = query(collection(db, "avaliacoes"), where("prestadorId", "==", prestadorId), where("clienteId", "==", clienteId));
+                const querySnapshot = await getDocs(q);
+                return !querySnapshot.empty;
+            } catch (error) {
+                console.error("Erro ao verificar avaliação:", error);
+                return false;
+            }
+        }
+        
+        const prestador = JSON.parse(sessionStorage.getItem('prestadorSelecionado'));
+        if (!prestador) window.location.href = 'index.html';
+        
+        const telefoneLimpo = prestador.telefone.replace(/\D/g, '');
+        const telefoneLink = telefoneLimpo.startsWith('55') ? telefoneLimpo : '55' + telefoneLimpo;
+        const estrelasHtml = renderizarEstrelas(prestador.avaliacao);
+        
+        const avaliacaoTextos = {
+            0: 'Sem avaliações ainda',
+            1: '⭐ Péssimo',
+            2: '⭐⭐ Ruim',
+            3: '⭐⭐⭐ Bom',
+            4: '⭐⭐⭐⭐ Ótimo',
+            5: '⭐⭐⭐⭐⭐ Excelente'
+        };
+        
+        const notaMedia = Math.round(prestador.avaliacao);
+        const textoAvaliacao = avaliacaoTextos[notaMedia] || avaliacaoTextos[0];
+        
+        document.getElementById('detalhes').innerHTML = `
+            <div class="header-premium" style="margin: -1rem -1rem 1rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0; text-align: center;">
+                ${prestador.foto ? 
+                    `<img src="${prestador.foto}" class="foto-prestador-grande" alt="${prestador.nome}" onerror="this.src='https://via.placeholder.com/150?text=👨‍🔧'">` : 
+                    '<div style="font-size: 4rem; margin-bottom: 0.5rem; text-align: center;">👨‍🔧</div>'}
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">${prestador.nome}</h2>
+                <div class="badge badge-primary" style="display: inline-block; margin-bottom: 0.5rem;">${prestador.profissao}</div>
+                <div class="badge-localizacao" style="display: inline-block; margin-left: 0.5rem;">
+                    📍 ${prestador.cidade || 'Cidade não informada'}/${prestador.estado || ''}
+                </div>
+            </div>
+            
+            <div style="padding: 0.5rem 0;">
+                <!-- Cards de Informações -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+                    <div class="info-card">
+                        <div class="info-label">💰 Preço por hora</div>
+                        <div class="info-value" style="color: var(--success-600); font-size: 1.25rem;">R$ ${prestador.preco}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">⭐ Avaliação</div>
+                        <div class="info-value">
+                            ${estrelasHtml}
+                            <span style="font-size: 0.875rem;">(${prestador.totalAvaliacoes} avaliações)</span>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--gray-500);">${textoAvaliacao}</div>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-label">📞 Contato</div>
+                    <div class="info-value">${prestador.telefone}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-label">📍 Localização</div>
+                    <div class="info-value">${prestador.cidade || 'Cidade não informada'}, ${prestador.estado || ''}</div>
+                    ${prestador.bairro ? `<div style="font-size: 0.75rem; color: var(--gray-500);">Bairro: ${prestador.bairro}</div>` : ''}
+                    ${prestador.raioAtuacao ? `<div style="font-size: 0.75rem; color: var(--gray-500);">📍 Atende num raio de ${prestador.raioAtuacao} km</div>` : ''}
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-label">📝 Sobre o profissional</div>
+                    <div class="info-value" style="font-weight: normal; line-height: 1.5;">${prestador.descricao || "Profissional dedicado e experiente, pronto para atender você com qualidade e compromisso."}</div>
+                </div>
+                
+                <div style="margin: 1.5rem 0;">
+                    <a href="https://wa.me/${telefoneLink}?text=Olá! Vi seu perfil no ServMatch e gostaria de contratar seus serviços." 
+                       target="_blank" 
+                       class="btn btn-whatsapp" style="display: block; text-align: center; text-decoration: none;">
+                        📱 Falar com o profissional via WhatsApp
+                    </a>
+                </div>
+                
+                <button id="solicitarBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); width: 100%; margin-bottom: 0.75rem;">
+                    📋 Solicitar este serviço
+                </button>
+                
+                <button id="avaliarBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); width: 100%;">
+                    ⭐ Avaliar este profissional
+                </button>
+                <div id="avisoAvaliacao" class="aviso-login" style="display: none;">
+                    🔒 Você precisa estar logado para avaliar profissionais.
+                    <a href="cliente-login.html">Clique aqui para fazer login como cliente</a>
+                </div>
+            </div>
+        `;
+        
+        const btnSolicitar = document.getElementById('solicitarBtn');
+        if (btnSolicitar) {
+            btnSolicitar.addEventListener('click', () => {
+                if (!usuarioLogado) {
+                    alert('Para solicitar um serviço, você precisa fazer login como cliente.');
+                    window.location.href = 'cliente-login.html';
+                    return;
+                }
+                window.location.href = 'novo-pedido.html';
+            });
+        }
+        
+        const btnAvaliar = document.getElementById('avaliarBtn');
+        const avisoAvaliacao = document.getElementById('avisoAvaliacao');
+        
+        if (btnAvaliar) {
+            btnAvaliar.addEventListener('click', async () => {
+                if (!usuarioLogado) {
+                    avisoAvaliacao.style.display = 'block';
+                    setTimeout(() => { avisoAvaliacao.style.display = 'none'; }, 5000);
+                    return;
+                }
+                
+                const jaAvaliou = await verificarAvaliacaoExistente(prestador.id, userId);
+                if (jaAvaliou) {
+                    alert('⚠️ Você já avaliou este profissional anteriormente!');
+                    return;
+                }
+                window.location.href = 'avaliar.html';
+            });
+        }
+    </script>
+</body>
+</html>

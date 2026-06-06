@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliar Profissional - ServMatch</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .estrelas {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+        .estrela {
+            font-size: 3rem;
+            cursor: pointer;
+            color: #d1d5db;
+            transition: transform 0.2s;
+        }
+        .estrela:hover {
+            transform: scale(1.1);
+        }
+        .estrela.selecionada {
+            color: #eab308;
+        }
+        .comentario {
+            margin: 1rem 0;
+        }
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .nota-info {
+            text-align: center;
+            font-size: 1.25rem;
+            margin: 1rem 0;
+            min-height: 60px;
+        }
+        .prestador-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            margin-bottom: 1rem;
+        }
+        .prestador-foto-pequena {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .feedback-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideInUp 0.3s ease;
+            box-shadow: var(--shadow-xl);
+        }
+        .feedback-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .feedback-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .feedback-message { color: var(--gray-600); margin-bottom: 1.5rem; line-height: 1.5; }
+        .feedback-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .success-card .feedback-title { color: #10b981; }
+        .error-card .feedback-title { color: #dc2626; }
+        .warning-card .feedback-title { color: #f59e0b; }
+        
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .erro-msg {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div style="text-align: center;">
+                <div style="font-size: 3rem;">⭐</div>
+                <h2>Avaliar Profissional</h2>
+                <p style="color: var(--gray-500);">Sua opinião é muito importante!</p>
+            </div>
+            
+            <div id="prestadorInfo" class="prestador-info"></div>
+            
+            <div class="estrelas" id="estrelas">
+                <span class="estrela" data-nota="1">★</span>
+                <span class="estrela" data-nota="2">★</span>
+                <span class="estrela" data-nota="3">★</span>
+                <span class="estrela" data-nota="4">★</span>
+                <span class="estrela" data-nota="5">★</span>
+            </div>
+            
+            <div class="nota-info" id="notaInfo">
+                ✨ Clique nas estrelas para avaliar ✨
+            </div>
+            
+            <div class="comentario">
+                <label>💬 Deixe um comentário (opcional):</label>
+                <textarea id="comentario" rows="4" placeholder="Conte sobre sua experiência com este profissional..."></textarea>
+            </div>
+            
+            <button id="enviarBtn" class="btn btn-primary">📤 Enviar Avaliação</button>
+            <button id="cancelarBtn" class="btn btn-secondary" style="margin-top: 0.75rem;">Cancelar</button>
+            <div id="erroMsg" class="erro-msg" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { verificarClienteLogado } from './js/check-auth.js';
+        import { verificarEmailVerificado } from './js/auth.js';
+        import { db } from './js/firebase-config.js';
+        import { doc, updateDoc, increment, collection, addDoc, Timestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        
+        console.log("🚀 Página de avaliação carregada!");
+        
+        function mostrarFeedback(tipo, titulo, mensagem, redirectUrl = null) {
+            const modalExistente = document.querySelector('.feedback-overlay');
+            if (modalExistente) modalExistente.remove();
+            
+            const cores = {
+                success: { icon: '✅', cor: '#10b981' },
+                error: { icon: '❌', cor: '#dc2626' },
+                warning: { icon: '⚠️', cor: '#f59e0b' }
+            };
+            
+            const config = cores[tipo] || cores.info;
+            
+            const modal = document.createElement('div');
+            modal.className = 'feedback-overlay';
+            modal.innerHTML = `
+                <div class="feedback-card ${tipo}-card">
+                    <div class="feedback-icon">${config.icon}</div>
+                    <div class="feedback-title" style="color: ${config.cor}">${titulo}</div>
+                    <div class="feedback-message">${mensagem}</div>
+                    <button class="feedback-button" id="feedbackCloseBtn">${redirectUrl ? 'Continuar' : 'Fechar'}</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const closeBtn = document.getElementById('feedbackCloseBtn');
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                if (redirectUrl) window.location.href = redirectUrl;
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    if (redirectUrl) window.location.href = redirectUrl;
+                }
+            });
+        }
+        
+        // Função principal assíncrona auto-executável (sem return no top level)
+        (async function iniciarPagina() {
+            try {
+                // Verificar autenticação
+                console.log("1️⃣ Verificando autenticação...");
+                const user = await verificarClienteLogado();
+                if (!user) {
+                    console.log("❌ Usuário não logado!");
+                    mostrarFeedback('warning', 'Login necessário', 'Você precisa estar logado para avaliar profissionais.', 'cliente-login.html');
+                    return;
+                }
+                console.log("✅ Usuário logado:", user.email);
+                
+                // Verificar email verificado
+                console.log("2️⃣ Verificando email...");
+                const emailVerificado = await verificarEmailVerificado();
+                if (!emailVerificado) {
+                    console.log("❌ Email não verificado!");
+                    mostrarFeedback('warning', 'Verifique seu e-mail', 'Você precisa verificar seu e-mail antes de avaliar profissionais.', 'verificar-email.html');
+                    return;
+                }
+                console.log("✅ Email verificado!");
+                
+                // Recuperar prestador
+                console.log("3️⃣ Recuperando prestador...");
+                const prestador = JSON.parse(sessionStorage.getItem('prestadorSelecionado'));
+                if (!prestador) {
+                    console.log("❌ Prestador não encontrado!");
+                    mostrarFeedback('error', 'Erro', 'Profissional não encontrado.', 'cliente.html');
+                    return;
+                }
+                console.log("✅ Prestador encontrado:", prestador.nome);
+                
+                const clienteId = user.uid;
+                const clienteEmail = user.email;
+                
+                // Exibir informações do prestador
+                const prestadorInfo = document.getElementById('prestadorInfo');
+                prestadorInfo.innerHTML = `
+                    ${prestador.foto ? `<img src="${prestador.foto}" class="prestador-foto-pequena" alt="${prestador.nome}" onerror="this.style.display='none'">` : '<div style="font-size: 2rem;">👨‍🔧</div>'}
+                    <div>
+                        <strong style="font-size: 1.1rem;">${prestador.nome}</strong>
+                        <div style="font-size: 0.8rem; color: var(--gray-500);">${prestador.profissao}</div>
+                        <div style="font-size: 0.75rem; color: var(--primary-500);">📍 ${prestador.cidade || ''}/${prestador.estado || ''}</div>
+                        <div style="font-size: 0.75rem; color: var(--success-600);">💰 R$ ${prestador.preco}/hora</div>
+                    </div>
+                `;
+                
+                // Verificar se já avaliou
+                console.log("4️⃣ Verificando se já avaliou...");
+                const q = query(
+                    collection(db, "avaliacoes"),
+                    where("prestadorId", "==", prestador.id),
+                    where("clienteId", "==", clienteId)
+                );
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    console.log("⚠️ Usuário já avaliou este profissional!");
+                    mostrarFeedback('warning', 'Avaliação já realizada', 'Você já avaliou este profissional anteriormente. Cada profissional só pode ser avaliado uma vez.', 'cliente-painel.html');
+                    // Impedir interação
+                    document.getElementById('estrelas').style.opacity = '0.5';
+                    document.getElementById('estrelas').style.pointerEvents = 'none';
+                    document.getElementById('enviarBtn').disabled = true;
+                    document.getElementById('enviarBtn').style.opacity = '0.5';
+                    return;
+                }
+                console.log("✅ Ainda não avaliou, pode prosseguir!");
+                
+                // ========== SISTEMA DE ESTRELAS ==========
+                let notaSelecionada = 0;
+                const estrelas = document.querySelectorAll('.estrela');
+                const notaInfo = document.getElementById('notaInfo');
+                const erroMsg = document.getElementById('erroMsg');
+                
+                console.log("5️⃣ Configurando eventos das estrelas...");
+                
+                // Função para atualizar as estrelas
+                function atualizarEstrelas(nota) {
+                    estrelas.forEach((e, index) => {
+                        if (index < nota) {
+                            e.classList.add('selecionada');
+                        } else {
+                            e.classList.remove('selecionada');
+                        }
+                    });
+                }
+                
+                // Adicionar evento de clique em cada estrela
+                estrelas.forEach(estrela => {
+                    estrela.addEventListener('click', () => {
+                        const nota = parseInt(estrela.getAttribute('data-nota'));
+                        notaSelecionada = nota;
+                        atualizarEstrelas(nota);
+                        
+                        const textos = {
+                            1: '⭐ Péssimo - Não recomendo de jeito nenhum',
+                            2: '⭐⭐ Ruim - Abaixo das expectativas',
+                            3: '⭐⭐⭐ Bom - Atendeu as expectativas',
+                            4: '⭐⭐⭐⭐ Ótimo - Recomendo com confiança',
+                            5: '⭐⭐⭐⭐⭐ Excelente - Profissional fantástico!'
+                        };
+                        notaInfo.textContent = textos[nota];
+                        notaInfo.style.color = '#eab308';
+                        notaInfo.style.fontWeight = 'bold';
+                        erroMsg.style.display = 'none';
+                        console.log("⭐ Nota selecionada:", nota);
+                    });
+                });
+                
+                console.log("✅ Eventos das estrelas configurados!");
+                
+                // ========== ENVIAR AVALIAÇÃO ==========
+                const enviarBtn = document.getElementById('enviarBtn');
+                const cancelarBtn = document.getElementById('cancelarBtn');
+                
+                enviarBtn.addEventListener('click', async () => {
+                    console.log("📤 Botão enviar clicado!");
+                    
+                    if (notaSelecionada === 0) {
+                        erroMsg.textContent = '⚠️ Selecione uma nota antes de avaliar!';
+                        erroMsg.style.display = 'block';
+                        console.log("❌ Nenhuma nota selecionada");
+                        return;
+                    }
+                    
+                    erroMsg.style.display = 'none';
+                    const comentario = document.getElementById('comentario').value;
+                    const textoOriginal = enviarBtn.innerHTML;
+                    enviarBtn.innerHTML = '<div class="loading-spinner"></div> Enviando avaliação...';
+                    enviarBtn.disabled = true;
+                    
+                    try {
+                        console.log("6️⃣ Atualizando média do prestador...");
+                        // Atualizar média do prestador
+                        const prestadorRef = doc(db, "prestadores", prestador.id);
+                        const novoTotal = prestador.totalAvaliacoes + 1;
+                        const novaMedia = ((prestador.avaliacao * prestador.totalAvaliacoes) + notaSelecionada) / novoTotal;
+                        
+                        await updateDoc(prestadorRef, {
+                            avaliacao: novaMedia,
+                            totalAvaliacoes: increment(1)
+                        });
+                        console.log("✅ Média atualizada com sucesso!");
+                        
+                        console.log("7️⃣ Salvando avaliação...");
+                        // Salvar avaliação
+                        await addDoc(collection(db, "avaliacoes"), {
+                            prestadorId: prestador.id,
+                            prestadorNome: prestador.nome,
+                            prestadorProfissao: prestador.profissao,
+                            clienteId: clienteId,
+                            clienteEmail: clienteEmail,
+                            nota: notaSelecionada,
+                            comentario: comentario,
+                            criadoEm: Timestamp.now()
+                        });
+                        console.log("✅ Avaliação salva com sucesso!");
+                        
+                        mostrarFeedback('success', 'Avaliação enviada!', 'Obrigado por contribuir com a comunidade! Sua avaliação ajuda outros clientes a escolherem melhores profissionais.', 'cliente-painel.html');
+                        
+                    } catch (error) {
+                        console.error("❌ Erro detalhado:", error);
+                        
+                        if (error.code === 'permission-denied') {
+                            erroMsg.textContent = 'Erro de permissão: Verifique se seu e-mail está verificado.';
+                            erroMsg.style.display = 'block';
+                        } else {
+                            erroMsg.textContent = error.message || 'Ocorreu um erro. Tente novamente.';
+                            erroMsg.style.display = 'block';
+                        }
+                        
+                        enviarBtn.innerHTML = textoOriginal;
+                        enviarBtn.disabled = false;
+                    }
+                });
+                
+                cancelarBtn.addEventListener('click', () => {
+                    console.log("🔙 Cancelar clicado, voltando...");
+                    window.location.href = 'cliente-painel.html';
+                });
+                
+                console.log("✅ Página pronta para uso!");
+                
+            } catch (error) {
+                console.error("❌ Erro na inicialização:", error);
+                mostrarFeedback('error', 'Erro', error.message || 'Ocorreu um erro ao carregar a página.');
+            }
+        })();
+    </script>
+</body>
+</html>

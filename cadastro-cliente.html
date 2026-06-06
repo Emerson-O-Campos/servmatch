@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Cadastro Cliente</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .password-strength {
+            height: 4px;
+            background: var(--gray-200);
+            border-radius: var(--radius-full);
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s, background 0.3s;
+        }
+        .password-strength-text {
+            font-size: 0.7rem;
+            margin-top: 0.25rem;
+        }
+        .termos {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+        .termos a {
+            color: var(--primary-500);
+            text-decoration: none;
+        }
+        .termos a:hover {
+            text-decoration: underline;
+        }
+        .buscar-cep-btn {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        .buscar-cep-btn:hover {
+            background: var(--gray-200);
+        }
+        .info-verificacao {
+            background: linear-gradient(135deg, #e0e9ff, #f0f4ff);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+            border-left: 4px solid var(--primary-500);
+        }
+        
+        /* ============================================
+           MODAL DE FEEDBACK PERSONALIZADO
+        ============================================ */
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideInUp 0.3s ease;
+            box-shadow: var(--shadow-xl);
+        }
+        .feedback-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .feedback-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .feedback-message {
+            color: var(--gray-600);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .feedback-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .feedback-button:hover {
+            transform: translateY(-2px);
+        }
+        .feedback-message a {
+            color: var(--primary-500);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .feedback-message a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-card .feedback-title { color: #dc2626; }
+        .success-card .feedback-title { color: #10b981; }
+        .warning-card .feedback-title { color: #f59e0b; }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='index.html'" style="background: none; border: none; color: var(--primary-500); cursor: pointer; margin-bottom: 1rem;">
+            ← Voltar para home
+        </button>
+        
+        <div class="card animate-fade-in-up" style="max-width: 500px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">👤</div>
+                <h2 style="font-size: 1.5rem;">Criar Conta - Cliente</h2>
+                <p style="opacity: 0.9; font-size: 0.875rem;">Preencha seus dados para começar</p>
+            </div>
+            
+            <!-- Informação sobre verificação de e-mail -->
+            <div class="info-verificacao" id="infoVerificacao">
+                <span style="font-size: 1.2rem;">✉️</span>
+                <strong>Importante:</strong> Após o cadastro, enviaremos um link de verificação para seu e-mail. 
+                Você precisará confirmar seu e-mail antes de fazer login.<br><br>
+                <span style="font-size: 0.75rem;">⚠️ <strong>Dica:</strong> Verifique também a pasta de <strong>SPAM</strong> do seu e-mail!</span>
+            </div>
+            
+            <form id="cadastroForm">
+                <!-- Informações Pessoais -->
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 0 0 0.5rem;">📋 Informações Pessoais</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">👤 Nome completo *</label>
+                    <input type="text" id="nome" class="input-field" required placeholder="Ex: João Silva">
+                    <small>Digite seu nome completo</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📧 E-mail *</label>
+                    <input type="email" id="email" class="input-field" required placeholder="seu@email.com">
+                    <small>Usaremos este e-mail para login e contato. Você precisará verificá-lo.</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📞 Telefone (com DDD) *</label>
+                    <input type="tel" id="telefone" class="input-field" required placeholder="(11) 99999-9999">
+                    <small>Para contato e recuperação de senha</small>
+                </div>
+                
+                <!-- Localização -->
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 1rem 0 0.5rem;">📍 Localização</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">📮 CEP *</label>
+                    <input type="text" id="cep" class="input-field" placeholder="00000-000" maxlength="9">
+                    <button type="button" id="buscarCepBtn" class="buscar-cep-btn">🔍 Buscar endereço</button>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏙️ Estado *</label>
+                    <select id="estado" class="input-field" required>
+                        <option value="">Selecione</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏙️ Cidade *</label>
+                    <input type="text" id="cidade" class="input-field" required placeholder="Sua cidade">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📍 Bairro *</label>
+                    <input type="text" id="bairro" class="input-field" required placeholder="Seu bairro">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏠 Rua e número</label>
+                    <input type="text" id="endereco" class="input-field" placeholder="Rua, número, complemento">
+                </div>
+                
+                <!-- Segurança -->
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 1rem 0 0.5rem;">🔒 Segurança</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">🔒 Senha *</label>
+                    <input type="password" id="senha" class="input-field" required placeholder="••••••••">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="senhaStrength"></div>
+                    </div>
+                    <div class="password-strength-text" id="senhaStrengthText"></div>
+                    <small>Mínimo 6 caracteres, use letras e números (recomendado: 8+ caracteres)</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🔒 Confirmar senha *</label>
+                    <input type="password" id="confirmarSenha" class="input-field" required placeholder="••••••••">
+                </div>
+                
+                <div class="termos">
+                    <input type="checkbox" id="aceitoTermos" required>
+                    <label for="aceitoTermos">
+                        Eu aceito os <a href="#">Termos de Serviço</a> e a <a href="#">Política de Privacidade</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    📝 Criar minha conta
+                </button>
+                
+                <div class="text-center" style="margin-top: 1rem;">
+                    <p class="text-sm" style="color: var(--gray-500);">
+                        Já tem uma conta? 
+                        <a href="cliente-login.html" style="color: var(--primary-500);">Faça login</a>
+                    </p>
+                </div>
+            </form>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <hr style="margin: 1rem 0;">
+                <p class="text-sm" style="color: var(--gray-500);">É um profissional?</p>
+                <a href="cadastro-prestador.html" class="btn btn-secondary" style="display: block; text-align: center; text-decoration: none;">
+                    👨‍🔧 Cadastrar como Prestador
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { criarConta } from './js/auth.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { validarTelefone, validarSenhaForte, getSenhaStrength, validarEmail, validarNome, validarCidade, validarBairro } from './js/validacoes.js';
+        
+        // Função para mostrar feedback visual (modal)
+        function mostrarFeedback(tipo, titulo, mensagem, redirectUrl = null) {
+            // Remover modal existente
+            const modalExistente = document.querySelector('.feedback-overlay');
+            if (modalExistente) modalExistente.remove();
+            
+            const cores = {
+                success: { icon: '✅', cor: '#10b981' },
+                error: { icon: '❌', cor: '#dc2626' },
+                warning: { icon: '⚠️', cor: '#f59e0b' },
+                info: { icon: 'ℹ️', cor: '#3b82f6' }
+            };
+            
+            const config = cores[tipo] || cores.info;
+            
+            const modal = document.createElement('div');
+            modal.className = 'feedback-overlay';
+            modal.innerHTML = `
+                <div class="feedback-card ${tipo}-card">
+                    <div class="feedback-icon">${config.icon}</div>
+                    <div class="feedback-title" style="color: ${config.cor}">${titulo}</div>
+                    <div class="feedback-message">${mensagem}</div>
+                    <button class="feedback-button" id="feedbackCloseBtn">${redirectUrl ? 'Continuar' : 'Fechar'}</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const closeBtn = document.getElementById('feedbackCloseBtn');
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            });
+            
+            // Fechar ao clicar fora
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                }
+            });
+        }
+        
+        // Validação de senha em tempo real
+        document.getElementById('senha').addEventListener('input', (e) => {
+            const strength = getSenhaStrength(e.target.value);
+            const barra = document.getElementById('senhaStrength');
+            const texto = document.getElementById('senhaStrengthText');
+            
+            barra.style.width = `${(strength.level === 'weak' ? 33 : strength.level === 'medium' ? 66 : 100)}%`;
+            barra.style.background = strength.color;
+            texto.innerHTML = strength.text;
+            texto.style.color = strength.color;
+        });
+        
+        // Busca de CEP
+        document.getElementById('buscarCepBtn').addEventListener('click', async () => {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            
+            if (cep.length !== 8) {
+                mostrarFeedback('warning', 'CEP inválido', 'Digite 8 números para o CEP.');
+                return;
+            }
+            
+            const btn = document.getElementById('buscarCepBtn');
+            btn.innerHTML = '⏳ Buscando...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const data = await response.json();
+                
+                if (data.erro) {
+                    mostrarFeedback('warning', 'CEP não encontrado', 'Verifique o número digitado e tente novamente.');
+                    return;
+                }
+                
+                document.getElementById('estado').value = data.uf;
+                document.getElementById('cidade').value = data.localidade;
+                document.getElementById('bairro').value = data.bairro;
+                document.getElementById('endereco').value = data.logradouro || '';
+                
+                mostrarFeedback('success', 'Endereço encontrado!', `${data.logradouro || ''}, ${data.bairro} - ${data.localidade}/${data.uf}`);
+                
+            } catch (error) {
+                mostrarFeedback('error', 'Erro', 'Não foi possível buscar o CEP. Tente novamente.');
+            } finally {
+                btn.innerHTML = '🔍 Buscar endereço';
+                btn.disabled = false;
+            }
+        });
+        
+        // Envio do formulário
+        document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const telefone = document.getElementById('telefone').value;
+            const cep = document.getElementById('cep').value;
+            const estado = document.getElementById('estado').value;
+            const cidade = document.getElementById('cidade').value;
+            const bairro = document.getElementById('bairro').value;
+            const endereco = document.getElementById('endereco').value;
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            const aceitoTermos = document.getElementById('aceitoTermos').checked;
+            
+            // Validações
+            if (!validarNome(nome)) {
+                mostrarFeedback('warning', 'Nome inválido', 'Digite seu nome completo (mínimo 3 caracteres)');
+                return;
+            }
+            
+            if (!validarEmail(email)) {
+                mostrarFeedback('warning', 'E-mail inválido', 'Digite um endereço de e-mail válido (ex: nome@email.com)');
+                return;
+            }
+            
+            if (!validarTelefone(telefone)) {
+                mostrarFeedback('warning', 'Telefone inválido', 'Use o formato (DD) 9 9999-9999 ou (DD) 9999-9999');
+                return;
+            }
+            
+            if (!estado) {
+                mostrarFeedback('warning', 'Estado não selecionado', 'Selecione seu estado no campo Estado');
+                return;
+            }
+            
+            if (!validarCidade(cidade)) {
+                mostrarFeedback('warning', 'Cidade inválida', 'Digite o nome da sua cidade');
+                return;
+            }
+            
+            if (!validarBairro(bairro)) {
+                mostrarFeedback('warning', 'Bairro inválido', 'Digite o nome do seu bairro');
+                return;
+            }
+            
+            if (!validarSenhaForte(senha)) {
+                mostrarFeedback('warning', 'Senha muito fraca', 'Use pelo menos 6 caracteres, incluindo letras e números');
+                return;
+            }
+            
+            if (senha !== confirmarSenha) {
+                mostrarFeedback('warning', 'Senhas não coincidem', 'A senha e a confirmação devem ser iguais');
+                return;
+            }
+            
+            if (!aceitoTermos) {
+                mostrarFeedback('warning', 'Termos não aceitos', 'Você precisa aceitar os Termos de Serviço e a Política de Privacidade');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<div class="loading-spinner"></div> Criando conta...';
+            btn.disabled = true;
+            
+            try {
+                // 1. Criar conta no Authentication
+                const result = await criarConta(email, senha);
+                
+                if (!result.success) {
+                    mostrarFeedback('error', 'Erro ao criar conta', result.error);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                const user = result.user;
+                
+                try {
+                    // 2. Salvar dados no Firestore
+                    await setDoc(doc(db, "clientes", user.uid), {
+                        nome: nome,
+                        email: email,
+                        telefone: telefone.replace(/\D/g, ''),
+                        cep: cep.replace(/\D/g, ''),
+                        estado: estado,
+                        cidade: cidade,
+                        bairro: bairro,
+                        endereco: endereco,
+                        tipo: 'cliente',
+                        criadoEm: new Date(),
+                        status: 'ativo',
+                        emailVerificado: false
+                    });
+                    
+                    // 3. Sucesso! Mostrar feedback e redirecionar
+                    mostrarFeedback(
+                        'success',
+                        '🎉 Conta criada com sucesso!',
+                        `Enviamos um link de verificação para <strong>${email}</strong>.<br><br>📧 Verifique sua caixa de entrada <strong>e a pasta de SPAM</strong> e clique no link para ativar sua conta.<br><br>Após a verificação, você poderá fazer login normalmente.`,
+                        'verificar-email.html'
+                    );
+                    
+                } catch (firestoreError) {
+                    // ❌ Erro no Firestore - limpar usuário do Authentication
+                    console.error("Erro ao salvar no Firestore:", firestoreError);
+                    
+                    // Tentar deletar o usuário recém-criado para não ficar órfão
+                    try {
+                        await user.delete();
+                        console.log("Usuário removido do Authentication devido a erro no Firestore");
+                    } catch (deleteError) {
+                        console.error("Não foi possível remover o usuário:", deleteError);
+                    }
+                    
+                    // Mostrar erro específico
+                    if (firestoreError.code === 'permission-denied') {
+                        mostrarFeedback(
+                            'error',
+                            'Erro de permissão',
+                            'Não foi possível completar o cadastro. Isso geralmente é um problema nas regras do Firestore. Contate o suporte.'
+                        );
+                    } else {
+                        mostrarFeedback('error', 'Erro ao salvar dados', firestoreError.message);
+                    }
+                    
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+                
+            } catch (error) {
+                console.error("Erro detalhado:", error);
+                
+                // Verificar se é erro de e-mail já existente
+                if (error.message && (error.message.includes('já está cadastrado') || error.message.includes('already in use'))) {
+                    mostrarFeedback(
+                        'warning',
+                        'E-mail já cadastrado',
+                        'Este e-mail já possui uma conta. <a href="cliente-login.html">Clique aqui para fazer login</a>'
+                    );
+                } else {
+                    mostrarFeedback('error', 'Erro inesperado', error.message || 'Ocorreu um erro. Tente novamente mais tarde.');
+                }
+                
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

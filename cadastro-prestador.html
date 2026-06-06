@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServMatch - Cadastro Prestador</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .password-strength {
+            height: 4px;
+            background: var(--gray-200);
+            border-radius: var(--radius-full);
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s, background 0.3s;
+        }
+        .preview-foto {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0.5rem auto;
+            display: block;
+            border: 3px solid var(--primary-500);
+        }
+        .buscar-cep-btn {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        .buscar-cep-btn:hover {
+            background: var(--gray-200);
+        }
+        .info-verificacao {
+            background: linear-gradient(135deg, #e0e9ff, #f0f4ff);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+            border-left: 4px solid var(--primary-500);
+        }
+        
+        /* MODAL DE FEEDBACK */
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideInUp 0.3s ease;
+            box-shadow: var(--shadow-xl);
+        }
+        .feedback-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .feedback-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .feedback-message {
+            color: var(--gray-600);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .feedback-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .feedback-button:hover {
+            transform: translateY(-2px);
+        }
+        .feedback-message a {
+            color: var(--primary-500);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .feedback-message a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-card .feedback-title { color: #dc2626; }
+        .success-card .feedback-title { color: #10b981; }
+        .warning-card .feedback-title { color: #f59e0b; }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='index.html'" style="background: none; border: none; color: var(--primary-500); cursor: pointer; margin-bottom: 1rem;">
+            ← Voltar para home
+        </button>
+        
+        <div class="card animate-fade-in-up" style="max-width: 500px; margin: 0 auto;">
+            <div class="header-premium" style="margin: -1rem -1rem 1.5rem -1rem; border-radius: var(--radius-xl) var(--radius-xl) 0 0; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">👨‍🔧</div>
+                <h2 style="font-size: 1.5rem;">Cadastro - Prestador</h2>
+                <p style="opacity: 0.9; font-size: 0.875rem;">Ofereça seus serviços e ganhe dinheiro</p>
+            </div>
+            
+            <div class="info-verificacao">
+                <span style="font-size: 1.2rem;">✉️</span>
+                <strong>Importante:</strong> Após o cadastro, enviaremos um link de verificação para seu e-mail.<br><br>
+                <span style="font-size: 0.75rem;">⚠️ <strong>Dica:</strong> Verifique também a pasta de <strong>SPAM</strong> do seu e-mail!</span>
+            </div>
+            
+            <form id="cadastroForm">
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 0 0 0.5rem;">📋 Informações Pessoais</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">👤 Nome completo *</label>
+                    <input type="text" id="nome" class="input-field" required placeholder="Ex: João Silva">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📧 E-mail *</label>
+                    <input type="email" id="email" class="input-field" required placeholder="seu@email.com">
+                    <small>Você precisará verificar este e-mail</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📞 WhatsApp (com DDD) *</label>
+                    <input type="tel" id="telefone" class="input-field" required placeholder="(11) 99999-9999">
+                    <small>Para clientes entrarem em contato</small>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🖼️ URL da sua foto (opcional)</label>
+                    <input type="url" id="foto" class="input-field" placeholder="https://exemplo.com/minha-foto.jpg">
+                    <div id="previewContainer" style="text-align: center;"></div>
+                </div>
+                
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 1rem 0 0.5rem;">🔧 Informações Profissionais</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">🔧 Profissão *</label>
+                    <input type="text" id="profissao" class="input-field" required placeholder="Ex: eletricista, programador, encanador">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">💰 Preço por hora (R$) *</label>
+                    <input type="number" id="preco" class="input-field" step="10" required placeholder="Ex: 80" min="10" max="999">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📝 Descrição dos serviços</label>
+                    <textarea id="descricao" class="input-field" rows="4" placeholder="Conte sobre sua experiência, materiais que usa, diferenciais..."></textarea>
+                </div>
+                
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 1rem 0 0.5rem;">📍 Onde você atende?</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">📮 CEP da sua localização *</label>
+                    <input type="text" id="cep" class="input-field" placeholder="00000-000" maxlength="9">
+                    <button type="button" id="buscarCepBtn" class="buscar-cep-btn">🔍 Buscar endereço</button>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏙️ Estado *</label>
+                    <select id="estado" class="input-field" required>
+                        <option value="">Selecione</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏙️ Cidade *</label>
+                    <input type="text" id="cidade" class="input-field" required placeholder="Sua cidade">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📍 Bairro *</label>
+                    <input type="text" id="bairro" class="input-field" required placeholder="Seu bairro">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📍 Raio de atuação (km) *</label>
+                    <select id="raioAtuacao" class="input-field" required>
+                        <option value="5">Até 5 km</option>
+                        <option value="10" selected>Até 10 km</option>
+                        <option value="20">Até 20 km</option>
+                        <option value="30">Até 30 km</option>
+                        <option value="50">Até 50 km</option>
+                        <option value="100">Cidade inteira</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🏠 Atende em domicílio?</label>
+                    <select id="atendeDomicilio" class="input-field">
+                        <option value="sim">Sim, vou até o cliente</option>
+                        <option value="nao">Não, apenas no meu local</option>
+                        <option value="ambos">Ambos</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">📍 Cidades/Regiões que atende</label>
+                    <input type="text" id="cidadesAtendidas" class="input-field" placeholder="Ex: São Paulo, Guarulhos, ABC Paulista">
+                    <small>Separe por vírgula</small>
+                </div>
+                
+                <h3 class="text-gradient" style="font-size: 1rem; margin: 1rem 0 0.5rem;">🔒 Segurança</h3>
+                
+                <div class="input-group">
+                    <label class="input-label">🔒 Senha *</label>
+                    <input type="password" id="senha" class="input-field" required placeholder="••••••••">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="senhaStrength"></div>
+                    </div>
+                    <div class="password-strength-text" id="senhaStrengthText"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">🔒 Confirmar senha *</label>
+                    <input type="password" id="confirmarSenha" class="input-field" required placeholder="••••••••">
+                </div>
+                
+                <div class="termos" style="margin: 1rem 0;">
+                    <input type="checkbox" id="aceitoTermos" required>
+                    <label for="aceitoTermos">
+                        Eu aceito os <a href="#">Termos de Serviço</a> e a <a href="#">Política de Privacidade</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    💾 Cadastrar como Prestador
+                </button>
+                
+                <div class="text-center" style="margin-top: 1rem;">
+                    <p class="text-sm" style="color: var(--gray-500);">
+                        Já tem uma conta? 
+                        <a href="prestador-login.html" style="color: var(--primary-500);">Faça login</a>
+                    </p>
+                </div>
+            </form>
+            
+            <div class="text-center" style="margin-top: 1rem;">
+                <hr style="margin: 1rem 0;">
+                <p class="text-sm" style="color: var(--gray-500);">É um cliente?</p>
+                <a href="cadastro-cliente.html" class="btn btn-secondary" style="display: block; text-align: center; text-decoration: none;">
+                    👤 Cadastrar como Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { criarConta } from './js/auth.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { collection, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { validarTelefone, validarSenhaForte, getSenhaStrength } from './js/validacoes.js';
+        
+        function mostrarFeedback(tipo, titulo, mensagem, redirectUrl = null) {
+            const modalExistente = document.querySelector('.feedback-overlay');
+            if (modalExistente) modalExistente.remove();
+            
+            const cores = {
+                success: { icon: '✅', cor: '#10b981' },
+                error: { icon: '❌', cor: '#dc2626' },
+                warning: { icon: '⚠️', cor: '#f59e0b' },
+                info: { icon: 'ℹ️', cor: '#3b82f6' }
+            };
+            
+            const config = cores[tipo] || cores.info;
+            
+            const modal = document.createElement('div');
+            modal.className = 'feedback-overlay';
+            modal.innerHTML = `
+                <div class="feedback-card ${tipo}-card">
+                    <div class="feedback-icon">${config.icon}</div>
+                    <div class="feedback-title" style="color: ${config.cor}">${titulo}</div>
+                    <div class="feedback-message">${mensagem}</div>
+                    <button class="feedback-button" id="feedbackCloseBtn">${redirectUrl ? 'Continuar' : 'Fechar'}</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const closeBtn = document.getElementById('feedbackCloseBtn');
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                }
+            });
+        }
+        
+        document.getElementById('foto').addEventListener('input', (e) => {
+            const url = e.target.value;
+            const previewContainer = document.getElementById('previewContainer');
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                previewContainer.innerHTML = `<img src="${url}" class="preview-foto" alt="Pré-visualização" onerror="this.style.display='none'">`;
+            } else {
+                previewContainer.innerHTML = '';
+            }
+        });
+        
+        document.getElementById('senha').addEventListener('input', (e) => {
+            const strength = getSenhaStrength(e.target.value);
+            const barra = document.getElementById('senhaStrength');
+            const texto = document.getElementById('senhaStrengthText');
+            
+            barra.style.width = `${(strength.level === 'weak' ? 33 : strength.level === 'medium' ? 66 : 100)}%`;
+            barra.style.background = strength.color;
+            texto.innerHTML = strength.text;
+            texto.style.color = strength.color;
+        });
+        
+        document.getElementById('buscarCepBtn').addEventListener('click', async () => {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            
+            if (cep.length !== 8) {
+                mostrarFeedback('warning', 'CEP inválido', 'Digite 8 números para o CEP.');
+                return;
+            }
+            
+            const btn = document.getElementById('buscarCepBtn');
+            btn.innerHTML = '⏳ Buscando...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const data = await response.json();
+                
+                if (data.erro) {
+                    mostrarFeedback('warning', 'CEP não encontrado', 'Verifique o número digitado e tente novamente.');
+                    return;
+                }
+                
+                document.getElementById('estado').value = data.uf;
+                document.getElementById('cidade').value = data.localidade;
+                document.getElementById('bairro').value = data.bairro;
+                
+                mostrarFeedback('success', 'Endereço encontrado!', `${data.logradouro || ''}, ${data.bairro} - ${data.localidade}/${data.uf}`);
+                
+            } catch (error) {
+                mostrarFeedback('error', 'Erro', 'Não foi possível buscar o CEP. Tente novamente.');
+            } finally {
+                btn.innerHTML = '🔍 Buscar endereço';
+                btn.disabled = false;
+            }
+        });
+        
+        document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const telefone = document.getElementById('telefone').value;
+            const foto = document.getElementById('foto').value;
+            const profissao = document.getElementById('profissao').value;
+            const preco = document.getElementById('preco').value;
+            const descricao = document.getElementById('descricao').value;
+            const cep = document.getElementById('cep').value;
+            const estado = document.getElementById('estado').value;
+            const cidade = document.getElementById('cidade').value;
+            const bairro = document.getElementById('bairro').value;
+            const raioAtuacao = document.getElementById('raioAtuacao').value;
+            const atendeDomicilio = document.getElementById('atendeDomicilio').value;
+            const cidadesAtendidas = document.getElementById('cidadesAtendidas').value;
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            const aceitoTermos = document.getElementById('aceitoTermos').checked;
+            
+            if (!nome || nome.trim().length < 3) {
+                mostrarFeedback('warning', 'Nome inválido', 'Digite seu nome completo (mínimo 3 caracteres)');
+                return;
+            }
+            
+            if (!email || !email.includes('@')) {
+                mostrarFeedback('warning', 'E-mail inválido', 'Digite um endereço de e-mail válido');
+                return;
+            }
+            
+            if (!validarTelefone(telefone)) {
+                mostrarFeedback('warning', 'Telefone inválido', 'Use o formato (DD) 9 9999-9999');
+                return;
+            }
+            
+            if (!profissao) {
+                mostrarFeedback('warning', 'Profissão não informada', 'Informe sua profissão');
+                return;
+            }
+            
+            if (!preco || preco < 10) {
+                mostrarFeedback('warning', 'Preço inválido', 'O preço mínimo é R$ 10,00 por hora');
+                return;
+            }
+            
+            if (!estado) {
+                mostrarFeedback('warning', 'Estado não selecionado', 'Selecione seu estado');
+                return;
+            }
+            
+            if (!cidade) {
+                mostrarFeedback('warning', 'Cidade não informada', 'Digite sua cidade');
+                return;
+            }
+            
+            if (!bairro) {
+                mostrarFeedback('warning', 'Bairro não informado', 'Digite seu bairro');
+                return;
+            }
+            
+            if (!validarSenhaForte(senha)) {
+                mostrarFeedback('warning', 'Senha muito fraca', 'Use pelo menos 6 caracteres, incluindo letras e números');
+                return;
+            }
+            
+            if (senha !== confirmarSenha) {
+                mostrarFeedback('warning', 'Senhas não coincidem', 'A senha e a confirmação devem ser iguais');
+                return;
+            }
+            
+            if (!aceitoTermos) {
+                mostrarFeedback('warning', 'Termos não aceitos', 'Você precisa aceitar os Termos de Serviço');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<div class="loading-spinner"></div> Cadastrando...';
+            btn.disabled = true;
+            
+            try {
+                const result = await criarConta(email, senha);
+                
+                if (!result.success) {
+                    if (result.error && result.error.includes('já está cadastrado')) {
+                        mostrarFeedback('warning', 'E-mail já cadastrado', 'Este e-mail já possui uma conta. <a href="prestador-login.html">Clique aqui para fazer login</a>');
+                    } else {
+                        mostrarFeedback('error', 'Erro ao criar conta', result.error);
+                    }
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                const user = result.user;
+                
+                try {
+                    // Criar documento do prestador no Firestore
+                    const docRef = await addDoc(collection(db, "prestadores"), {
+                        userId: user.uid,
+                        userEmail: email,
+                        nome: nome,
+                        profissao: profissao.toLowerCase(),
+                        telefone: telefone.replace(/\D/g, ''),
+                        preco: parseFloat(preco),
+                        descricao: descricao || "",
+                        foto: foto || "",
+                        cep: cep.replace(/\D/g, ''),
+                        estado: estado,
+                        cidade: cidade,
+                        bairro: bairro,
+                        raioAtuacao: parseInt(raioAtuacao),
+                        atendeDomicilio: atendeDomicilio,
+                        cidadesAtendidas: cidadesAtendidas ? cidadesAtendidas.split(',').map(c => c.trim()) : [],
+                        avaliacao: 0,
+                        totalAvaliacoes: 0,
+                        status: 'ativo',
+                        criadoEm: new Date()
+                    });
+                    
+                    console.log("✅ Prestador cadastrado com ID:", docRef.id);
+                    
+                    mostrarFeedback(
+                        'success',
+                        '🎉 Cadastro realizado com sucesso!',
+                        `Enviamos um link de verificação para <strong>${email}</strong>.<br><br>📧 Verifique sua caixa de entrada <strong>e a pasta de SPAM</strong> e clique no link para ativar sua conta.<br><br>Após a verificação, você poderá fazer login na área do prestador.`,
+                        'verificar-email.html'
+                    );
+                    
+                } catch (firestoreError) {
+                    console.error("Erro ao salvar no Firestore:", firestoreError);
+                    
+                    try {
+                        await user.delete();
+                        console.log("Usuário removido do Authentication");
+                    } catch (deleteError) {
+                        console.error("Não foi possível remover o usuário:", deleteError);
+                    }
+                    
+                    if (firestoreError.code === 'permission-denied') {
+                        mostrarFeedback(
+                            'error',
+                            'Erro de permissão',
+                            'Não foi possível completar o cadastro. Por favor, contate o suporte.'
+                        );
+                    } else {
+                        mostrarFeedback('error', 'Erro ao salvar dados', firestoreError.message);
+                    }
+                    
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+                
+            } catch (error) {
+                console.error("Erro detalhado:", error);
+                
+                if (error.message && (error.message.includes('já está cadastrado') || error.message.includes('already in use'))) {
+                    mostrarFeedback(
+                        'warning',
+                        'E-mail já cadastrado',
+                        'Este e-mail já possui uma conta. <a href="prestador-login.html">Clique aqui para fazer login</a>'
+                    );
+                } else {
+                    mostrarFeedback('error', 'Erro inesperado', error.message || 'Ocorreu um erro. Tente novamente mais tarde.');
+                }
+                
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
